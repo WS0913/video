@@ -6,6 +6,7 @@ ipconfig 查看局域网ip
 ./mediamtx.exe
 
 cd server
+python -m venv venv
 venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python -c "from models import init_db; import asyncio; asyncio.run(init_db())"
@@ -17,26 +18,27 @@ pnpm dev
 
 
 linux
+修改linux密码
+sudo passwd user 
 
-检查
-
+检查散热
 cat /sys/class/thermal/cooling_device*/type
 
 vcgencmd measure_temp
-
+ 
 sudo raspi-config
 
 列举连接的摄像头
 libcamera-hello --list-cameras
 
 测试摄像头
-rpicam-hello
+rpicam-hello 
 libcamera-still -o test.jpg --width 640 --height 480
 libcamera-hello --width 640 --height 480 --framerate 15
 
 修改配置
 cd Desktop/video/camera-client
-nano .env CTRL o保存 ctrl x退出 第一行改成服务端ip
+nano .env  SERVER_URL和RTSP_SERVER改成服务端ip
 
 
 启动mediamtx
@@ -48,7 +50,5 @@ cd ~/mediamtx
 启动采集端
 ssh yuxiang@192.168.1.9  > 123456
 cd Desktop/video/camera-client
-
 source venv/bin/activate
-pip install -r requirements.txt
 python main.py
