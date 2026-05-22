@@ -7,6 +7,9 @@ load_dotenv()
 # 服务器配置
 SERVER_URL = os.getenv('SERVER_URL', 'http://localhost:8000')
 
+# 设备API令牌（用于认证）
+DEVICE_API_TOKEN = os.getenv('DEVICE_API_TOKEN', 'device-api-token-change-in-production')
+
 # 设备配置
 DEVICE_NAME = os.getenv('DEVICE_NAME', 'Camera-001')
 DEVICE_TYPE = os.getenv('DEVICE_TYPE', 'robot')  # robot 或 fixed

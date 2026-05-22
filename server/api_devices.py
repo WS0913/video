@@ -1,5 +1,5 @@
 """设备管理API"""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from pydantic import BaseModel
@@ -13,6 +13,14 @@ from config import settings
 
 router = APIRouter()
 _last_stream_snapshots = {}
+
+
+def verify_device_token(x_device_token: str = Header(...)):
+    """验证设备API令牌"""
+    if x_device_token != settings.DEVICE_API_TOKEN:
+        logger.warning(f"设备API令牌验证失败: {x_device_token}")
+        raise HTTPException(status_code=401, detail="设备API令牌无效")
+    return x_device_token
 
 
 # Pydantic模型
@@ -70,9 +78,10 @@ class StreamStatusUpdate(BaseModel):
 @router.post("/register", response_model=dict)
 async def register_device(
     device_data: DeviceRegister,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(verify_device_token)
 ):
-    """注册设备（基于IP地址去重）"""
+    """注册设备（基于IP地址去重，需要设备API令牌认证）"""
     try:
         # 先查找是否已存在相同IP的设备
         result = await db.execute(
@@ -139,9 +148,10 @@ async def register_device(
 async def device_heartbeat(
     device_id: str,
     heartbeat: HeartbeatRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(verify_device_token)
 ):
-    """设备心跳"""
+    """设备心跳（需要设备API令牌认证）"""
     try:
         # 更新设备心跳时间、在线状态和可选网络指标
         values = {
@@ -179,9 +189,10 @@ async def device_heartbeat(
 async def update_stream_status(
     device_id: str,
     status_data: StreamStatusUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(verify_device_token)
 ):
-    """上报视频参数和网络质量状态"""
+    """上报视频参数和网络质量状态（需要设备API令牌认证）"""
     try:
         values = {"updated_at": datetime.utcnow()}
         for field in (

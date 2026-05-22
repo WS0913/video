@@ -22,7 +22,7 @@ class CameraClient:
         self.reconnect_count = 0
         self.last_stream_state = "inactive"
         self.last_report_snapshot = None
-        
+
     async def setup(self) -> bool:
         """初始化设置"""
         try:
@@ -47,7 +47,8 @@ class CameraClient:
                 server_url=config.SERVER_URL,
                 device_name=config.DEVICE_NAME,
                 device_type=config.DEVICE_TYPE,
-                location=config.DEVICE_LOCATION
+                location=config.DEVICE_LOCATION,
+                device_api_token=config.DEVICE_API_TOKEN
             )
 
             # 注册设备
@@ -173,7 +174,7 @@ class CameraClient:
         await asyncio.sleep(config.STREAM_RECONNECT_DELAY)
         logger.warning(f"重建WHIP推流 profile={profile_name} reconnects={self.reconnect_count}")
         await self.start_streamer(profile_name)
-    
+
     async def run(self):
         """运行主循环"""
         self.running = True
@@ -205,7 +206,7 @@ class CameraClient:
             logger.error(f"运行异常: {e}")
         finally:
             await self.cleanup()
-    
+
     async def cleanup(self):
         """清理资源"""
         logger.info("开始清理资源...")

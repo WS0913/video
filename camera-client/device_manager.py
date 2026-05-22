@@ -15,7 +15,8 @@ class DeviceManager:
         server_url: str,
         device_name: str,
         device_type: str,
-        location: str
+        location: str,
+        device_api_token: str = "device-api-token-change-in-production"
     ):
         """
         初始化设备管理器
@@ -25,11 +26,13 @@ class DeviceManager:
             device_name: 设备名称
             device_type: 设备类型
             location: 设备位置
+            device_api_token: 设备API令牌（用于认证）
         """
         self.server_url = server_url.rstrip('/')
         self.device_name = device_name
         self.device_type = device_type
         self.location = location
+        self.device_api_token = device_api_token
 
         self.device_id: Optional[str] = None
         self.heartbeat_thread: Optional[threading.Thread] = None
@@ -74,6 +77,7 @@ class DeviceManager:
             response = requests.post(
                 f'{self.server_url}/api/devices/register',
                 json=device_info,
+                headers={"X-Device-Token": self.device_api_token},
                 timeout=10
             )
 
@@ -123,6 +127,7 @@ class DeviceManager:
                         'network_rtt_ms': self.last_heartbeat_rtt_ms,
                         'packet_loss': self.packet_loss_estimate,
                     },
+                    headers={"X-Device-Token": self.device_api_token},
                     timeout=5
                 )
                 self.last_heartbeat_rtt_ms = round((time.time() - started_at) * 1000, 2)
@@ -174,6 +179,7 @@ class DeviceManager:
             response = requests.post(
                 f'{self.server_url}/api/devices/{self.device_id}/stream-status',
                 json=payload,
+                headers={"X-Device-Token": self.device_api_token},
                 timeout=5
             )
             if response.status_code == 200:

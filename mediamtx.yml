@@ -24,14 +24,11 @@ hlsAlwaysRemux: no
 rtmpAddress: :1935
 
 # 允许所有路径（动态创建）
-# 不设置任何认证参数，允许匿名访问
+# 安全说明：
+# 1. 本系统部署在局域网内，通过网络隔离保证安全
+# 2. 设备注册和心跳通过后端API进行认证
+# 3. 生产环境建议启用MediaMTX的publish/read认证
 paths:
   all:
-    # 启用录像功能
-    record: yes
-    recordPath: ./server/recordings/%path/%Y-%m-%d_%H-%M-%S
-    recordFormat: fmp4
-    recordPartDuration: 1h
-    recordSegmentDuration: 1h
-    recordDeleteAfter: 168h  # 7天后自动删除
+    record: no
 
