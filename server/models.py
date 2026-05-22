@@ -54,6 +54,11 @@ class Device(Base):
     resolution = Column(String(20))
     fps = Column(Integer)
     bitrate = Column(Integer)
+    network_level = Column(String(20), default="unknown")  # good/weak/poor/unknown
+    network_rtt_ms = Column(Float)
+    packet_loss = Column(Float)
+    reconnect_count = Column(Integer, default=0)
+    stream_status = Column(String(20), default="inactive")  # active/inactive/reconnecting/error
     last_heartbeat = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -154,4 +159,3 @@ async def init_db():
             print("ℹ️  管理员账户已存在")
 
     print("✅ 数据库初始化完成")
-

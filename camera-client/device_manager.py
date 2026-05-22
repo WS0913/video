@@ -34,6 +34,11 @@ class DeviceManager:
         self.device_id: Optional[str] = None
         self.heartbeat_thread: Optional[threading.Thread] = None
         self.running = False
+        self.consecutive_heartbeat_failures = 0
+        self.consecutive_heartbeat_successes = 0
+        self.last_heartbeat_rtt_ms: Optional[float] = None
+        self.packet_loss_estimate = 0.0
+        self.network_level = "good"
         
     def get_local_ip(self) -> str:
         """获取本机IP地址"""
@@ -61,7 +66,10 @@ class DeviceManager:
                 "ip_address": self.get_local_ip()
             }
             
-            logger.info(f"注册设备: {device_info}")
+            logger.info(
+                f"注册设备 name={self.device_name} type={self.device_type} "
+                f"location={self.location} ip={device_info['ip_address']}"
+            )
             
             response = requests.post(
                 f'{self.server_url}/api/devices/register',
@@ -72,7 +80,7 @@ class DeviceManager:
             if response.status_code == 200:
                 data = response.json()
                 self.device_id = data.get('device_id')
-                logger.info(f"设备注册成功，ID: {self.device_id}")
+                logger.info(f"设备注册成功 device={self.device_id}")
                 return True
             else:
                 logger.error(f"设备注册失败: {response.status_code} - {response.text}")
@@ -106,21 +114,78 @@ class DeviceManager:
         """心跳循环"""
         while self.running:
             try:
+                started_at = time.time()
                 response = requests.post(
                     f'{self.server_url}/api/devices/{self.device_id}/heartbeat',
-                    json={'timestamp': time.time()},
+                    json={
+                        'timestamp': time.time(),
+                        'network_level': self.network_level,
+                        'network_rtt_ms': self.last_heartbeat_rtt_ms,
+                        'packet_loss': self.packet_loss_estimate,
+                    },
                     timeout=5
                 )
+                self.last_heartbeat_rtt_ms = round((time.time() - started_at) * 1000, 2)
                 
                 if response.status_code == 200:
-                    logger.debug(f"心跳成功: {self.device_id}")
+                    self.consecutive_heartbeat_failures = 0
+                    self.consecutive_heartbeat_successes += 1
+                    self.packet_loss_estimate = 0.0
+                    logger.debug(f"心跳成功 device={self.device_id} rtt={self.last_heartbeat_rtt_ms}ms")
                 else:
-                    logger.warning(f"心跳失败: {response.status_code}")
+                    self.consecutive_heartbeat_failures += 1
+                    self.consecutive_heartbeat_successes = 0
+                    self.packet_loss_estimate = min(1.0, self.consecutive_heartbeat_failures / 3)
+                    logger.warning(
+                        f"心跳失败 device={self.device_id} status={response.status_code} "
+                        f"failures={self.consecutive_heartbeat_failures} net={self.network_level}"
+                    )
                     
             except Exception as e:
-                logger.error(f"心跳异常: {e}")
+                self.consecutive_heartbeat_failures += 1
+                self.consecutive_heartbeat_successes = 0
+                self.packet_loss_estimate = min(1.0, self.consecutive_heartbeat_failures / 3)
+                logger.warning(
+                    f"心跳异常 device={self.device_id} failures={self.consecutive_heartbeat_failures} "
+                    f"net={self.network_level} error={e}"
+                )
             
             time.sleep(interval)
+
+    def set_network_level(self, level: str):
+        """更新心跳上报的网络等级"""
+        self.network_level = level
+
+    def report_stream_status(self, status: Dict) -> bool:
+        """上报推流参数和网络状态"""
+        if self.device_id is None:
+            return False
+
+        try:
+            payload = {
+                **status,
+                "network_rtt_ms": self.last_heartbeat_rtt_ms,
+                "packet_loss": self.packet_loss_estimate,
+            }
+            response = requests.post(
+                f'{self.server_url}/api/devices/{self.device_id}/stream-status',
+                json=payload,
+                timeout=5
+            )
+            if response.status_code == 200:
+                logger.debug(
+                    f"状态上报成功 device={self.device_id} stream={payload.get('stream_status')} "
+                    f"net={payload.get('network_level')} rtt={payload.get('network_rtt_ms')}ms "
+                    f"loss={payload.get('packet_loss')} reconnects={payload.get('reconnect_count')}"
+                )
+                return True
+
+            logger.warning(f"视频状态上报失败: {response.status_code} - {response.text}")
+            return False
+
+        except Exception as e:
+            logger.error(f"视频状态上报异常: {e}")
+            return False
     
     def stop_heartbeat(self):
         """停止心跳"""
@@ -155,4 +220,3 @@ class DeviceManager:
         except Exception as e:
             logger.error(f"设备注销异常: {e}")
             return False
-

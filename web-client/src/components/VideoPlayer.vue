@@ -19,19 +19,22 @@
       </div>
     </div>
     <div class="video-footer">
-      <span class="info">{{ device.resolution || '720P' }} | {{ device.fps || 25 }}fps</span>
+      <span class="info">
+        {{ device.resolution || '720P' }} | {{ device.fps || 25 }}fps
+        <template v-if="device.bitrate"> | {{ device.bitrate }}kbps</template>
+      </span>
       <span class="status" :class="device.status">
         <el-icon><VideoCameraFilled /></el-icon>
-        {{ device.status === 'online' ? '在线' : '离线' }}
+        {{ statusText }}
       </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import type { Device } from '@/types'
-import { WebRTCPlayer } from '@eyevinn/webrtc-player'
+import { WHEPClient } from '@/utils/whepClient'
 import config from '@/config'
 
 interface Props {
@@ -47,7 +50,16 @@ const videoElement = ref<HTMLVideoElement>()
 const videoContainer = ref<HTMLDivElement>()
 const loading = ref(true)
 const error = ref('')
-let player: WebRTCPlayer | null = null
+const connectionState = ref('')
+let player: WHEPClient | null = null
+
+const statusText = computed(() => {
+  if (props.device.status !== 'online') return '离线'
+  if (props.device.stream_status === 'reconnecting' || connectionState.value === 'disconnected') return '重连中'
+  if (props.device.network_level === 'poor') return '弱网'
+  if (props.device.network_level === 'weak') return '降级'
+  return '在线'
+})
 
 // 初始化视频流
 const initVideoStream = async () => {
@@ -70,26 +82,25 @@ const initVideoStream = async () => {
 
     console.log('Connecting to WHEP endpoint:', whepUrl)
 
-    // 使用 @eyevinn/webrtc-player 库
-    player = new WebRTCPlayer({
-      video: videoElement.value,
-      type: 'whep',
-    })
-
-    // 监听事件
-    player.on('no-media', () => {
-      console.warn('Media timeout occurred')
-      error.value = '视频流超时'
-    })
-
-    player.on('media-recovered', () => {
-      console.log('Media recovered')
-      error.value = ''
+    player = new WHEPClient(videoElement.value, whepUrl, {
+      onLoading: () => {
+        loading.value = true
+      },
+      onRecovered: () => {
+        loading.value = false
+        error.value = ''
+      },
+      onError: (message) => {
+        loading.value = false
+        error.value = message
+      },
+      onStateChange: (state) => {
+        connectionState.value = state
+      },
     })
 
     // 加载流
-    await player.load(new URL(whepUrl))
-    player.unmute()
+    await player.start()
 
     loading.value = false
 
@@ -121,7 +132,7 @@ onMounted(() => {
 onUnmounted(() => {
   // 清理WebRTC播放器
   if (player) {
-    player.destroy()
+    player.stop()
     player = null
   }
 })
@@ -222,4 +233,3 @@ onUnmounted(() => {
   color: #f56c6c;
 }
 </style>
-

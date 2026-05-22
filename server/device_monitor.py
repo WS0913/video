@@ -37,6 +37,8 @@ class DeviceMonitor:
                     for device in timeout_devices:
                         logger.warning(f"设备心跳超时，设置为离线: {device.device_id} ({device.device_name})")
                         device.status = "offline"
+                        device.network_level = "poor"
+                        device.stream_status = "inactive"
                     
                     await db.commit()
                     logger.info(f"已更新 {len(timeout_devices)} 个设备的状态为离线")
