@@ -44,7 +44,7 @@ class DeviceResponse(BaseModel):
     stream_status: Optional[str]
     last_heartbeat: Optional[datetime]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -156,17 +156,18 @@ async def device_heartbeat(
             values["packet_loss"] = heartbeat.packet_loss
 
         stmt = update(Device).where(Device.device_id == device_id).values(**values)
-        
+
         result = await db.execute(stmt)
         await db.commit()
-        
+
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="设备不存在")
-        
-        logger.debug(f"设备心跳: {device_id}")
-        
+
+        # 心跳日志改为info级别，便于观察设备在线情况
+        logger.info(f"设备心跳 device={device_id} net={heartbeat.network_level or 'good'}")
+
         return {"message": "心跳成功"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -239,7 +240,8 @@ async def update_stream_status(
             else:
                 logger.info(message)
         else:
-            logger.debug(f"视频状态心跳 device={device_id} net={snapshot.get('network_level')} rtt={snapshot.get('network_rtt_ms')}ms")
+            # 改为info级别，保留周期性状态上报日志
+            logger.info(f"视频状态上报 device={device_id} net={snapshot.get('network_level')} stream={snapshot.get('stream_status')}")
 
         return {"message": "视频状态更新成功"}
 
@@ -323,17 +325,17 @@ async def device_offline(
             .where(Device.device_id == device_id)
             .values(status="offline")
         )
-        
+
         result = await db.execute(stmt)
         await db.commit()
-        
+
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="设备不存在")
-        
+
         logger.info(f"设备手动下线: {device_id}")
-        
+
         return {"message": "下线成功"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -352,17 +354,17 @@ async def delete_device(
             select(Device).where(Device.device_id == device_id)
         )
         device = result.scalar_one_or_none()
-        
+
         if device is None:
             raise HTTPException(status_code=404, detail="设备不存在")
-        
+
         await db.delete(device)
         await db.commit()
-        
+
         logger.info(f"设备已删除: {device_id}")
-        
+
         return {"message": "设备删除成功"}
-        
+
     except HTTPException:
         raise
     except Exception as e:

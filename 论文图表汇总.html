@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>毕业设计论文 - 图表汇总</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #3498db;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-left: 10px;
+            border-left: 4px solid #3498db;
+        }
+        h3 {
+            color: #555;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .diagram-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .diagram-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .code-block {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            position: relative;
+            overflow-x: auto;
+        }
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: "Consolas", "Monaco", monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background: #2980b9;
+        }
+        .mermaid-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        table th {
+            background: #f0f0f0;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .screenshot-list {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .screenshot-list h2 {
+            color: #856404;
+            margin-top: 0;
+            border-left-color: #ffc107;
+        }
+        .screenshot-list ul {
+            margin-left: 20px;
+            margin-top: 15px;
+        }
+        .screenshot-list li {
+            margin: 8px 0;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>基于 WebRTC 的电厂巡检机器人端到端无线视频传输系统<br>图表汇总</h1>
+
+        <p style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
+            <strong>说明：</strong>本文件仅包含 Mermaid 图表和需要截图的清单。<br>
+            论文中的表格已使用纯文本格式（空格对齐）写入 <code>毕业设计论文.txt</code> 文件中，方便复制到 Word 后替换为表格。
+        </p>
+
+        <!-- ==================== Mermaid 图表部分 ==================== -->
+        <h2>一、系统架构与流程图（Mermaid）</h2>
+
+        <div class="diagram-section">
+            <div class="diagram-title">图1-2 系统技术路线图</div>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>graph LR
+    A[需求调研与场景分析] --> B[协议与架构选型]
+    B --> C[数据库与接口设计]
+    C --> D[摄像头采集端实现]
+    C --> E[FastAPI 后端实现]
+    C --> F[MediaMTX 流媒体配置]
+    C --> G[Vue3 前端实现]
+    D --> H[弱网测试与性能分析]
+    E --> H
+    F --> H
+    G --> H
+    H --> I[系统总结与优化]
+
+    style A fill:#e1f5ff
+    style I fill:#e1f5ff
+    style H fill:#fff4e1</pre>
+            </div>
+            <div class="mermaid-container">
+                <div class="mermaid">
+graph LR
+    A[需求调研与场景分析] --> B[协议与架构选型]
+    B --> C[数据库与接口设计]
+    C --> D[摄像头采集端实现]
+    C --> E[FastAPI 后端实现]
+    C --> F[MediaMTX 流媒体配置]
+    C --> G[Vue3 前端实现]
+    D --> H[弱网测试与性能分析]
+    E --> H
+    F --> H
+    G --> H
+    H --> I[系统总结与优化]
+
+    style A fill:#e1f5ff
+    style I fill:#e1f5ff
+    style H fill:#fff4e1
+                </div>
+            </div>
+        </div>
+
+        <div class="diagram-section">
+            <div class="diagram-title">图2-1 WHIP/WHEP 推拉流交互过程示意图</div>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>sequenceDiagram
+    participant Camera as 摄像头采集端
+    participant MTX as MediaMTX
+    participant Browser as 浏览器前端
+
+    Note over Camera,MTX: WHIP 推流过程
+    Camera->>Camera: 创建 RTCPeerConnection
+    Camera->>Camera: 添加视频轨道
+    Camera->>Camera: 创建 Offer SDP
+    Camera->>MTX: POST /device_id/whip<br/>(发送 Offer SDP)
+    MTX->>MTX: 处理 Offer
+    MTX-->>Camera: 201 Created<br/>(返回 Answer SDP)
+    Camera->>Camera: 设置远程描述
+    Camera->>MTX: 持续推送视频帧
+
+    Note over MTX,Browser: WHEP 拉流过程
+    Browser->>Browser: 创建 RTCPeerConnection
+    Browser->>MTX: POST /device_id/whep<br/>(发送 Offer SDP)
+    MTX->>MTX: 处理 Offer
+    MTX-->>Browser: 201 Created<br/>(返回 Answer SDP)
+    Browser->>Browser: 设置远程描述
+    MTX->>Browser: 持续发送视频流
+    Browser->>Browser: 播放视频</pre>
+            </div>
+            <div class="mermaid-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant Camera as 摄像头采集端
+    participant MTX as MediaMTX
+    participant Browser as 浏览器前端
+
+    Note over Camera,MTX: WHIP 推流过程
+    Camera->>Camera: 创建 RTCPeerConnection
+    Camera->>Camera: 添加视频轨道
+    Camera->>Camera: 创建 Offer SDP
+    Camera->>MTX: POST /device_id/whip<br/>(发送 Offer SDP)
+    MTX->>MTX: 处理 Offer
+    MTX-->>Camera: 201 Created<br/>(返回 Answer SDP)
+    Camera->>Camera: 设置远程描述
+    Camera->>MTX: 持续推送视频帧
+
+    Note over MTX,Browser: WHEP 拉流过程
+    Browser->>Browser: 创建 RTCPeerConnection
+    Browser->>MTX: POST /device_id/whep<br/>(发送 Offer SDP)
+    MTX->>MTX: 处理 Offer
+    MTX-->>Browser: 201 Created<br/>(返回 Answer SDP)
+    Browser->>Browser: 设置远程描述
+    MTX->>Browser: 持续发送视频流
+    Browser->>Browser: 播放视频
+                </div>
+            </div>
+        </div>
+
+        <div class="diagram-section">
+            <div class="diagram-title">图3-1 巡检机器人远程监控业务流程图</div>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>graph TD
+    A[巡检机器人启动] --> B[摄像头采集端启动]
+    B --> C[向后端注册设备]
+    C --> D{注册成功?}
+    D -->|是| E[启动心跳线程]
+    D -->|否| F[记录错误并退出]
+    E --> G[启动 WHIP 推流]
+    G --> H[持续采集视频]
+    H --> I[推送到 MediaMTX]
+
+    J[监控人员] --> K[浏览器登录系统]
+    K --> L[查看设备列表]
+    L --> M{选择在线设备}
+    M --> N[进入实时监控页面]
+    N --> O[通过 WHEP 拉流]
+    O --> P[播放实时视频]
+    P --> Q{发现异常?}
+    Q -->|是| R[记录问题并通知现场]
+    Q -->|否| S[继续监控]
+
+    style A fill:#e1f5ff
+    style J fill:#e1f5ff
+    style R fill:#ffe1e1
+    style F fill:#ffe1e1</pre>
+            </div>
+            <div class="mermaid-container">
+                <div class="mermaid">
+graph TD
+    A[巡检机器人启动] --> B[摄像头采集端启动]
+    B --> C[向后端注册设备]
+    C --> D{注册成功?}
+    D -->|是| E[启动心跳线程]
+    D -->|否| F[记录错误并退出]
+    E --> G[启动 WHIP 推流]
+    G --> H[持续采集视频]
+    H --> I[推送到 MediaMTX]
+
+    J[监控人员] --> K[浏览器登录系统]
+    K --> L[查看设备列表]
+    L --> M{选择在线设备}
+    M --> N[进入实时监控页面]
+    N --> O[通过 WHEP 拉流]
+    O --> P[播放实时视频]
+    P --> Q{发现异常?}
+    Q -->|是| R[记录问题并通知现场]
+    Q -->|否| S[继续监控]
+
+    style A fill:#e1f5ff
+    style J fill:#e1f5ff
+    style R fill:#ffe1e1
+    style F fill:#ffe1e1
+                </div>
+            </div>
+        </div>
+
+        <div class="diagram-section">
+            <div class="diagram-title">图4-1 系统总体架构图</div>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>graph TB
+    subgraph "Web 展示层"
+        A1[登录页面]
+        A2[设备管理页面]
+        A3[实时监控页面]
+        A4[系统设置页面]
+    end
+
+    subgraph "业务服务层 - FastAPI 后端"
+        B1[用户认证模块]
+        B2[设备管理模块]
+        B3[心跳检测模块]
+        B4[视频状态管理]
+        B5[数据库 SQLite]
+    end
+
+    subgraph "流媒体服务层 - MediaMTX"
+        C1[WHIP 推流接入]
+        C2[WHEP 拉流分发]
+        C3[流路径管理]
+    end
+
+    subgraph "摄像头采集层"
+        D1[设备注册]
+        D2[心跳上报]
+        D3[摄像头采集]
+        D4[WHIP 推流]
+    end
+
+    A1 --> B1
+    A2 --> B2
+    A3 --> C2
+    A4 --> B1
+
+    B2 --> B5
+    B3 --> B5
+    B4 --> B5
+
+    D1 --> B2
+    D2 --> B3
+    D4 --> C1
+
+    C2 --> A3
+
+    style B5 fill:#f0f0f0
+    style C3 fill:#e1f5ff</pre>
+            </div>
+            <div class="mermaid-container">
+                <div class="mermaid">
+graph TB
+    subgraph "Web 展示层"
+        A1[登录页面]
+        A2[设备管理页面]
+        A3[实时监控页面]
+        A4[系统设置页面]
+    end
+
+    subgraph "业务服务层 - FastAPI 后端"
+        B1[用户认证模块]
+        B2[设备管理模块]
+        B3[心跳检测模块]
+        B4[视频状态管理]
+        B5[数据库 SQLite]
+    end
+
+    subgraph "流媒体服务层 - MediaMTX"
+        C1[WHIP 推流接入]
+        C2[WHEP 拉流分发]
+        C3[流路径管理]
+    end
+
+    subgraph "摄像头采集层"
+        D1[设备注册]
+        D2[心跳上报]
+        D3[摄像头采集]
+        D4[WHIP 推流]
+    end
+
+    A1 --> B1
+    A2 --> B2
+    A3 --> C2
+    A4 --> B1
+
+    B2 --> B5
+    B3 --> B5
+    B4 --> B5
+
+    D1 --> B2
+    D2 --> B3
+    D4 --> C1
+
+    C2 --> A3
+
+    style B5 fill:#f0f0f0
+    style C3 fill:#e1f5ff
+                </div>
+            </div>
+        </div>
+
+        <div class="diagram-section">
+            <div class="diagram-title">图4-2 系统模块划分与通信关系图</div>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>graph LR
+    subgraph "摄像头采集端"
+        CA[DeviceManager]
+        CB[WHIPStreamer]
+        CC[CameraVideoTrack]
+    end
+
+    subgraph "后端服务"
+        BA[api_auth]
+        BB[api_devices]
+        BC[device_monitor]
+        BD[models & database]
+    end
+
+    subgraph "前端客户端"
+        FA[Login 页面]
+        FB[DeviceManagement 页面]
+        FC[LiveMonitor 页面]
+        FD[VideoPlayer 组件]
+        FE[Pinia Store]
+        FF[API 封装]
+    end
+
+    subgraph "流媒体服务"
+        MA[MediaMTX]
+    end
+
+    CA -->|HTTP 注册/心跳| BB
+    CB -->|WHIP 推流| MA
+    CC -->|提供视频帧| CB
+
+    FA -->|登录请求| BA
+    FB -->|设备查询| BB
+    FC -->|选择设备| FD
+    FD -->|WHEP 拉流| MA
+    FF -->|携带令牌| BA
+    FF -->|携带令牌| BB
+    FE -->|状态管理| FB
+    FE -->|状态管理| FC
+
+    BC -->|监控心跳超时| BD
+    BB -->|读写设备数据| BD
+    BA -->|读写用户数据| BD
+
+    style MA fill:#e1f5ff
+    style BD fill:#f0f0f0</pre>
+            </div>
+            <div class="mermaid-container">
+                <div class="mermaid">
+graph LR
+    subgraph "摄像头采集端"
+        CA[DeviceManager]
+        CB[WHIPStreamer]
+        CC[CameraVideoTrack]
+    end
+
+    subgraph "后端服务"
+        BA[api_auth]
+        BB[api_devices]
+        BC[device_monitor]
+        BD[models & database]
+    end
+
+    subgraph "前端客户端"
+        FA[Login 页面]
+        FB[DeviceManagement 页面]
+        FC[LiveMonitor 页面]
+        FD[VideoPlayer 组件]
+        FE[Pinia Store]
+        FF[API 封装]
+    end
+
+    subgraph "流媒体服务"
+        MA[MediaMTX]
+    end
+
+    CA -->|HTTP 注册/心跳| BB
+    CB -->|WHIP 推流| MA
+    CC -->|提供视频帧| CB
+
+    FA -->|登录请求| BA
+    FB -->|设备查询| BB
+    FC -->|选择设备| FD
+    FD -->|WHEP 拉流| MA
+    FF -->|携带令牌| BA
+    FF -->|携带令牌| BB
+    FE -->|状态管理| FB
+    FE -->|状态管理| FC
+
+    BC -->|监控心跳超时| BD
+    BB -->|读写设备数据| BD
+    BA -->|读写用户数据| BD
+
+    style MA fill:#e1f5ff
+    style BD fill:#f0f0f0
+                </div>
+            </div>
+        </div>
+
+        <div class="diagram-section">
+            <div class="diagram-title">图4-3 设备注册流程图</div>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>sequenceDiagram
+    participant Client as 摄像头采集端
+    participant Backend as FastAPI 后端
+    participant DB as 数据库
+
+    Client->>Client: 读取配置<br/>(设备名称、类型、位置)
+    Client->>Client: 获取本机 IP 地址
+    Client->>Backend: POST /api/devices/register<br/>(设备信息 + IP)
+    Backend->>DB: 根据 IP 查询设备
+
+    alt 设备已存在
+        Backend->>DB: 更新设备信息和状态
+        Backend-->>Client: 返回已有 device_id
+    else 设备不存在
+        Backend->>Backend: 生成唯一 device_id
+        Backend->>Backend: 构造流地址<br/>(基于 device_id)
+        Backend->>DB: 创建新设备记录
+        Backend-->>Client: 返回 device_id 和 stream_url
+    end
+
+    Client->>Client: 保存 device_id
+    Client->>Client: 启动心跳线程
+    Client->>Client: 启动推流模块</pre>
+            </div>
+            <div class="mermaid-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant Client as 摄像头采集端
+    participant Backend as FastAPI 后端
+    participant DB as 数据库
+
+    Client->>Client: 读取配置<br/>(设备名称、类型、位置)
+    Client->>Client: 获取本机 IP 地址
+    Client->>Backend: POST /api/devices/register<br/>(设备信息 + IP)
+    Backend->>DB: 根据 IP 查询设备
+
+    alt 设备已存在
+        Backend->>DB: 更新设备信息和状态
+        Backend-->>Client: 返回已有 device_id
+    else 设备不存在
+        Backend->>Backend: 生成唯一 device_id
+        Backend->>Backend: 构造流地址<br/>(基于 device_id)
+        Backend->>DB: 创建新设备记录
+        Backend-->>Client: 返回 device_id 和 stream_url
+    end
+
+    Client->>Client: 保存 device_id
+    Client->>Client: 启动心跳线程
+    Client->>Client: 启动推流模块
+                </div>
+            </div>
+        </div>
+
+        <div class="diagram-section">
+            <div class="diagram-title">图4-4 心跳检测与状态更新流程图</div>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>sequenceDiagram
+    participant Client as 摄像头采集端
+    participant Backend as FastAPI 后端
+    participant Monitor as 设备监控服务
+    participant DB as 数据库
+
+    loop 每隔固定时间间隔
+        Client->>Backend: POST /api/devices/{id}/heartbeat<br/>(timestamp + 网络指标)
+        Backend->>DB: 更新 last_heartbeat 和 status=online
+        Backend-->>Client: 200 OK
+    end
+
+    loop 后台监控任务每隔 6 秒
+        Monitor->>DB: 查询所有 status=online 的设备
+        Monitor->>Monitor: 检查 last_heartbeat 是否超时
+
+        alt 发现超时设备
+            Monitor->>DB: 更新 status=offline
+            Monitor->>Monitor: 记录日志
+        end
+    end
+
+    Note over Client,DB: 前端刷新设备列表时<br/>可看到最新在线状态</pre>
+            </div>
+            <div class="mermaid-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant Client as 摄像头采集端
+    participant Backend as FastAPI 后端
+    participant Monitor as 设备监控服务
+    participant DB as 数据库
+
+    loop 每隔固定时间间隔
+        Client->>Backend: POST /api/devices/{id}/heartbeat<br/>(timestamp + 网络指标)
+        Backend->>DB: 更新 last_heartbeat 和 status=online
+        Backend-->>Client: 200 OK
+    end
+
+    loop 后台监控任务每隔 6 秒
+        Monitor->>DB: 查询所有 status=online 的设备
+        Monitor->>Monitor: 检查 last_heartbeat 是否超时
+
+        alt 发现超时设备
+            Monitor->>DB: 更新 status=offline
+            Monitor->>Monitor: 记录日志
+        end
+    end
+
+    Note over Client,DB: 前端刷新设备列表时<br/>可看到最新在线状态
+                </div>
+            </div>
+        </div>
+
+        <div class="diagram-section">
+            <div class="diagram-title">图4-5 实时推流与拉流流程图</div>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>sequenceDiagram
+    participant Camera as 摄像头采集端
+    participant MTX as MediaMTX
+    participant Browser as 浏览器前端
+
+    Note over Camera,MTX: 推流流程
+    Camera->>Camera: 根据 device_id 构造<br/>WHIP 地址
+    Camera->>Camera: 创建 RTCPeerConnection<br/>添加视频轨道
+    Camera->>Camera: 创建 Offer SDP
+    Camera->>MTX: POST /device_id/whip<br/>(Offer SDP)
+    MTX-->>Camera: 201 Created<br/>(Answer SDP)
+    Camera->>Camera: 设置远程描述
+    Camera->>MTX: 持续推送视频帧
+
+    Note over MTX,Browser: 拉流流程
+    Browser->>Browser: 用户选择设备
+    Browser->>Browser: 根据 device_id 构造<br/>WHEP 地址
+    Browser->>Browser: 创建 WebRTC 播放器
+    Browser->>MTX: 发起 WHEP 拉流请求
+    MTX-->>Browser: 返回 Answer SDP
+    Browser->>Browser: 设置远程描述
+    MTX->>Browser: 持续发送视频流
+    Browser->>Browser: 绑定到 video 元素播放</pre>
+            </div>
+            <div class="mermaid-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant Camera as 摄像头采集端
+    participant MTX as MediaMTX
+    participant Browser as 浏览器前端
+
+    Note over Camera,MTX: 推流流程
+    Camera->>Camera: 根据 device_id 构造<br/>WHIP 地址
+    Camera->>Camera: 创建 RTCPeerConnection<br/>添加视频轨道
+    Camera->>Camera: 创建 Offer SDP
+    Camera->>MTX: POST /device_id/whip<br/>(Offer SDP)
+    MTX-->>Camera: 201 Created<br/>(Answer SDP)
+    Camera->>Camera: 设置远程描述
+    Camera->>MTX: 持续推送视频帧
+
+    Note over MTX,Browser: 拉流流程
+    Browser->>Browser: 用户选择设备
+    Browser->>Browser: 根据 device_id 构造<br/>WHEP 地址
+    Browser->>Browser: 创建 WebRTC 播放器
+    Browser->>MTX: 发起 WHEP 拉流请求
+    MTX-->>Browser: 返回 Answer SDP
+    Browser->>Browser: 设置远程描述
+    MTX->>Browser: 持续发送视频流
+    Browser->>Browser: 绑定到 video 元素播放
+                </div>
+            </div>
+        </div>
+
+        <div class="diagram-section">
+            <div class="diagram-title">图4-6 弱网自动降级与恢复策略示意图</div>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>graph TD
+    A[正常运行 good] -->|心跳失败| B{连续失败次数}
+    B -->|1次| C[切换到 weak 档位]
+    B -->|3次以上| D[切换到 poor 档位]
+
+    C -->|降低码率和帧率| E[960x540 20fps 1200kbps]
+    D -->|降低分辨率| F[640x360 15fps 600kbps]
+
+    E -->|心跳恢复| G{连续成功次数}
+    F -->|心跳恢复| G
+
+    G -->|达到阈值| H[恢复到 good 档位]
+    H -->|重建推流连接| I[1280x720 25fps 2000kbps]
+
+    C -->|推流连接异常| J[触发重连]
+    D -->|推流连接异常| J
+    J -->|重建 WHIP 连接| K[使用当前档位参数]
+
+    F -->|长时间无恢复| L[设备标记为 offline]
+
+    style A fill:#d4edda
+    style C fill:#fff3cd
+    style D fill:#f8d7da
+    style H fill:#d4edda
+    style L fill:#f8d7da</pre>
+            </div>
+            <div class="mermaid-container">
+                <div class="mermaid">
+graph TD
+    A[正常运行 good] -->|心跳失败| B{连续失败次数}
+    B -->|1次| C[切换到 weak 档位]
+    B -->|3次以上| D[切换到 poor 档位]
+
+    C -->|降低码率和帧率| E[960x540 20fps 1200kbps]
+    D -->|降低分辨率| F[640x360 15fps 600kbps]
+
+    E -->|心跳恢复| G{连续成功次数}
+    F -->|心跳恢复| G
+
+    G -->|达到阈值| H[恢复到 good 档位]
+    H -->|重建推流连接| I[1280x720 25fps 2000kbps]
+
+    C -->|推流连接异常| J[触发重连]
+    D -->|推流连接异常| J
+    J -->|重建 WHIP 连接| K[使用当前档位参数]
+
+    F -->|长时间无恢复| L[设备标记为 offline]
+
+    style A fill:#d4edda
+    style C fill:#fff3cd
+    style D fill:#f8d7da
+    style H fill:#d4edda
+    style L fill:#f8d7da
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 需要截图的部分 ==================== -->
+        <div class="screenshot-list">
+            <h2>二、需要实际截图的图片清单</h2>
+            <p>以下图片需要在系统实际运行时进行截图：</p>
+            <ul>
+                <li><strong>图1-1</strong> 电厂巡检机器人视频回传应用场景示意图（可用示意图或现场照片）</li>
+                <li><strong>图5-1</strong> 登录页面截图（浏览器访问前端登录页面）</li>
+                <li><strong>图5-2</strong> 设备管理页面截图（显示设备列表、状态、操作按钮）</li>
+                <li><strong>图5-3</strong> 摄像头采集端运行日志截图（终端显示注册、心跳、推流日志）</li>
+                <li><strong>图5-4</strong> MediaMTX 启动与流接入日志截图（MediaMTX 终端日志）</li>
+                <li><strong>图5-5</strong> 前端设备列表页面截图（与图5-2可能重复，展示不同角度）</li>
+                <li><strong>图5-6</strong> 实时监控多分屏页面截图（显示1/4/9分屏布局和视频播放）</li>
+                <li><strong>图6-1</strong> 实时视频预览测试截图（正常播放状态）</li>
+                <li><strong>图6-2</strong> 不同带宽下视频画质对比截图（可拼接3张不同清晰度画面）</li>
+                <li><strong>图6-3</strong> 连续波动网络下播放状态变化截图（显示加载/错误/恢复状态）</li>
+                <li><strong>图6-4</strong> 不同带宽下卡顿率对比柱状图（可用Excel/Python绘制后截图）</li>
+            </ul>
+        </div>
+
+        <script>
+            // 初始化 Mermaid
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: 'default',
+                themeVariables: {
+                    fontSize: '14px'
+                }
+            });
+
+            // 复制代码功能
+            function copyCode(button) {
+                const codeBlock = button.parentElement;
+                const code = codeBlock.querySelector('pre').textContent;
+
+                navigator.clipboard.writeText(code).then(() => {
+                    const originalText = button.textContent;
+                    button.textContent = '已复制!';
+                    button.style.background = '#27ae60';
+
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.style.background = '#3498db';
+                    }, 2000);
+                }).catch(err => {
+                    alert('复制失败，请手动复制');
+                });
+            }
+        </script>
+    </div>
+</body>
+</html>
