@@ -118,6 +118,62 @@ export class WHEPClient {
       this.videoElement.srcObject = null
     }
   }
+
+  /**
+   * 获取WebRTC统计信息
+   */
+  async getStats(): Promise<VideoStats | null> {
+    if (!this.pc) return null
+
+    try {
+      const stats = await this.pc.getStats()
+      const videoStats: VideoStats = {
+        resolution: '',
+        fps: 0,
+        bitrate: 0,
+        packetLoss: 0,
+        packetsLost: 0,
+        packetsReceived: 0,
+        bytesReceived: 0,
+        rtt: 0,
+        jitter: 0,
+        timestamp: Date.now()
+      }
+
+      stats.forEach((report) => {
+        // 获取视频接收统计
+        if (report.type === 'inbound-rtp' && report.kind === 'video') {
+          videoStats.fps = Math.round(report.framesPerSecond || 0)
+          videoStats.packetsLost = report.packetsLost || 0
+          videoStats.packetsReceived = report.packetsReceived || 0
+          videoStats.bytesReceived = report.bytesReceived || 0
+          videoStats.jitter = Math.round((report.jitter || 0) * 1000) // 转换为ms
+
+          // 计算丢包率
+          if (videoStats.packetsReceived > 0) {
+            videoStats.packetLoss = Number(
+              ((videoStats.packetsLost / (videoStats.packetsLost + videoStats.packetsReceived)) * 100).toFixed(2)
+            )
+          }
+
+          // 获取分辨率
+          if (report.frameWidth && report.frameHeight) {
+            videoStats.resolution = `${report.frameWidth}x${report.frameHeight}`
+          }
+        }
+
+        // 获取RTT（往返时延）
+        if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+          videoStats.rtt = Math.round((report.currentRoundTripTime || 0) * 1000) // 转换为ms
+        }
+      })
+
+      return videoStats
+    } catch (error) {
+      console.error('Failed to get stats:', error)
+      return null
+    }
+  }
 }
 
 export interface WHEPClientCallbacks {
@@ -125,4 +181,17 @@ export interface WHEPClientCallbacks {
   onRecovered?: () => void
   onError?: (message: string) => void
   onStateChange?: (state: RTCPeerConnectionState | 'closed') => void
+}
+
+export interface VideoStats {
+  resolution: string
+  fps: number
+  bitrate: number
+  packetLoss: number
+  packetsLost: number
+  packetsReceived: number
+  bytesReceived: number
+  rtt: number
+  jitter: number
+  timestamp: number
 }

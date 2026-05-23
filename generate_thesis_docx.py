@@ -25,10 +25,10 @@ def add_title(doc, text):
     return para
 
 def add_section_title(doc, text, is_center=True):
-    """添加章节标题（摘要、Abstract等）"""
+    """添加章节标题（摘要、Abstract、参考文献、附录、致谢等）"""
     para = doc.add_paragraph()
     run = para.add_run(text)
-    run.font.size = Pt(14)
+    run.font.size = Pt(16)  # 改为16号字体，与章标题一致
     run.font.bold = True
     set_chinese_font(run, '黑体')
     if is_center:
@@ -54,7 +54,6 @@ def add_heading_level1(doc, text):
     para = doc.add_paragraph()
     run = para.add_run(text)
     run.font.size = Pt(14)
-    run.font.bold = True
     set_chinese_font(run, '黑体')
     para.paragraph_format.space_before = Pt(12)
     para.paragraph_format.space_after = Pt(8)
@@ -65,18 +64,38 @@ def add_heading_level2(doc, text):
     para = doc.add_paragraph()
     run = para.add_run(text)
     run.font.size = Pt(13)
-    run.font.bold = True
     set_chinese_font(run, '黑体')
     para.paragraph_format.space_before = Pt(8)
     para.paragraph_format.space_after = Pt(6)
     return para
 
 def add_normal_paragraph(doc, text, first_line_indent=True):
-    """添加正文段落"""
+    """添加正文段落，处理参考文献引用为上标+粗体"""
     para = doc.add_paragraph()
-    run = para.add_run(text)
-    run.font.size = Pt(12)
-    set_chinese_font(run, '宋体')
+
+    # 使用正则表达式分割文本，保留引用标记
+    # 匹配 [数字] 或 [数字][数字] 这样的模式
+    pattern = r'(\[\d+\](?:\[\d+\])*)'
+    parts = re.split(pattern, text)
+
+    for part in parts:
+        if not part:
+            continue
+
+        # 检查是否是引用标记
+        if re.match(r'^\[\d+\]', part):
+            # 这是引用标记，设置为上标+粗体
+            run = para.add_run(part)
+            run.font.size = Pt(12)
+            run.font.superscript = True
+            run.font.bold = True
+            set_chinese_font(run, '宋体')
+        else:
+            # 普通文本
+            run = para.add_run(part)
+            run.font.size = Pt(12)
+            set_chinese_font(run, '宋体')
+
     para.paragraph_format.line_spacing = Pt(20)
     if first_line_indent:
         para.paragraph_format.first_line_indent = Cm(1)
@@ -102,7 +121,6 @@ def add_table_title(doc, text):
     para = doc.add_paragraph()
     run = para.add_run(text)
     run.font.size = Pt(10.5)
-    run.font.bold = True
     set_chinese_font(run, '黑体')
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     para.paragraph_format.space_before = Pt(6)
@@ -110,11 +128,16 @@ def add_table_title(doc, text):
     return para
 
 def add_figure_placeholder(doc, text):
-    """添加图片占位符"""
+    """添加图片占位符，前面留10个空行"""
+    # 添加10个空行作为图片占位
+    for _ in range(10):
+        doc.add_paragraph()
+
+    # 添加图片标题
     para = doc.add_paragraph()
     run = para.add_run(text)
     run.font.size = Pt(10.5)
-    set_chinese_font(run, '宋体')
+    set_chinese_font(run, '黑体')
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     para.paragraph_format.space_before = Pt(6)
     para.paragraph_format.space_after = Pt(6)
@@ -258,7 +281,9 @@ def main():
 
         # 检测图片占位符
         if re.match(r'^【图\d+-\d+', line):
-            add_figure_placeholder(doc, line)
+            # 去掉【】和"插入位置"字样
+            figure_text = line.replace('【', '').replace('】', '').replace('插入位置', '').strip()
+            add_figure_placeholder(doc, figure_text)
             i += 1
             continue
 
@@ -284,6 +309,12 @@ def main():
             i += 1
             continue
 
+        # 检测附录子标题（附录 A、附录 B、附录 C）
+        if re.match(r'^附录\s+[A-Z]', line):
+            add_heading_level1(doc, line)
+            i += 1
+            continue
+
         # 检测致谢标题
         if line == '致  谢':
             doc.add_page_break()
@@ -305,10 +336,10 @@ def main():
     print("=" * 60)
     print("\n后续步骤：")
     print("1. 打开生成的 Word 文档")
-    print("2. 表格已保留空格对齐格式，可以：")
+    print("2. 表格已保留文本格式，可以：")
     print("   - 选中表格内容")
     print("   - 点击【插入】→【表格】→【文本转换成表格】")
-    print("   - 选择【空格】作为分隔符")
+    print("   - 选择【其他字符】，输入 --- 作为分隔符")
     print("3. 从 论文图表汇总.html 中截取图表并插入到对应位置")
     print("4. 使用格式刷统一调整格式细节")
     print("=" * 60)

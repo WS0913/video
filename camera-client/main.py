@@ -130,13 +130,27 @@ class CameraClient:
         )
         changed = snapshot[:7] != (self.last_report_snapshot[:7] if self.last_report_snapshot else None)
         if changed:
-            logger.info(
-                f"采集状态 stream={self.last_stream_state} net={self.current_profile} "
-                f"rtt={self.device_manager.last_heartbeat_rtt_ms if self.device_manager.last_heartbeat_rtt_ms is not None else '-'}ms "
-                f"loss={self.device_manager.packet_loss_estimate} "
-                f"reconnects={self.reconnect_count} "
-                f"profile={profile['width']}x{profile['height']}@{profile['fps']}fps/{profile['bitrate']}kbps"
-            )
+            # 档位变化时打印详细日志
+            old_profile = self.last_report_snapshot[0] if self.last_report_snapshot else "init"
+            if old_profile != self.current_profile:
+                logger.warning(
+                    f"📊 [档位变化] {old_profile} → {self.current_profile} | "
+                    f"分辨率: {profile['width']}x{profile['height']} | "
+                    f"帧率: {profile['fps']}fps | "
+                    f"码率: {profile['bitrate']}kbps | "
+                    f"RTT: {self.device_manager.last_heartbeat_rtt_ms if self.device_manager.last_heartbeat_rtt_ms is not None else '-'}ms | "
+                    f"丢包率: {self.device_manager.packet_loss_estimate}% | "
+                    f"重连次数: {self.reconnect_count} | "
+                    f"流状态: {self.last_stream_state}"
+                )
+            else:
+                logger.info(
+                    f"采集状态 stream={self.last_stream_state} net={self.current_profile} "
+                    f"rtt={self.device_manager.last_heartbeat_rtt_ms if self.device_manager.last_heartbeat_rtt_ms is not None else '-'}ms "
+                    f"loss={self.device_manager.packet_loss_estimate}% "
+                    f"reconnects={self.reconnect_count} "
+                    f"profile={profile['width']}x{profile['height']}@{profile['fps']}fps/{profile['bitrate']}kbps"
+                )
         self.last_report_snapshot = snapshot
         self.device_manager.set_network_level(self.current_profile)
         self.device_manager.report_stream_status({
@@ -172,7 +186,17 @@ class CameraClient:
             self.streamer = None
 
         await asyncio.sleep(config.STREAM_RECONNECT_DELAY)
-        logger.warning(f"重建WHIP推流 profile={profile_name} reconnects={self.reconnect_count}")
+
+        # 打印重连日志
+        profile = config.NETWORK_PROFILES[profile_name]
+        logger.warning(
+            f"🔄 [重建推流] profile={profile_name} | "
+            f"分辨率: {profile['width']}x{profile['height']} | "
+            f"帧率: {profile['fps']}fps | "
+            f"码率: {profile['bitrate']}kbps | "
+            f"重连次数: {self.reconnect_count}"
+        )
+
         await self.start_streamer(profile_name)
 
     async def run(self):
@@ -193,7 +217,11 @@ class CameraClient:
                     continue
 
                 if target_profile != self.current_profile:
-                    logger.warning(f"网络档位变化 {self.current_profile} -> {target_profile}")
+                    logger.warning(
+                        f"⚠️ [网络档位变化] {self.current_profile} → {target_profile} | "
+                        f"心跳失败: {self.device_manager.consecutive_heartbeat_failures}次 | "
+                        f"心跳成功: {self.device_manager.consecutive_heartbeat_successes}次"
+                    )
                     await self.restart_streamer(target_profile)
                     continue
 
