@@ -1,348 +1,514 @@
 """
-生成毕业设计论文 Word 文档 - 方案一：基础版
-包含所有文字内容和基本格式，表格和图表需要手动调整
+生成毕业设计论文 Word 文档 - 优化版
+支持：
+1. 上标引用
+2. 自动生成真实Word表格
+3. 表格文字水平+垂直居中
+4. 固定行高
+5. 表头灰底
 """
+
 import re
 from docx import Document
-from docx.shared import Pt, Cm
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
-from docx.oxml.ns import qn
+from docx.shared import Pt, Cm, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
+from docx.oxml.ns import qn, nsdecls
+from docx.oxml import parse_xml
+
 
 def set_chinese_font(run, font_name='宋体'):
     """设置中文字体"""
     run.font.name = font_name
     run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
 
+
 def add_title(doc, text):
-    """添加论文标题"""
     para = doc.add_paragraph()
     run = para.add_run(text)
+
     run.font.size = Pt(18)
     run.font.bold = True
     set_chinese_font(run, '黑体')
+
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     para.paragraph_format.space_after = Pt(12)
+
     return para
+
 
 def add_section_title(doc, text, is_center=True):
-    """添加章节标题（摘要、Abstract、参考文献、附录、致谢等）"""
     para = doc.add_paragraph()
-    run = para.add_run(text)
-    run.font.size = Pt(16)  # 改为16号字体，与章标题一致
-    run.font.bold = True
-    set_chinese_font(run, '黑体')
-    if is_center:
-        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    para.paragraph_format.space_before = Pt(12)
-    para.paragraph_format.space_after = Pt(8)
-    return para
 
-def add_chapter_title(doc, text):
-    """添加章标题（第X章）"""
-    para = doc.add_paragraph()
     run = para.add_run(text)
     run.font.size = Pt(16)
     run.font.bold = True
     set_chinese_font(run, '黑体')
+
+    if is_center:
+        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    para.paragraph_format.space_before = Pt(12)
+    para.paragraph_format.space_after = Pt(8)
+
+    return para
+
+
+def add_chapter_title(doc, text):
+    para = doc.add_paragraph()
+
+    run = para.add_run(text)
+    run.font.size = Pt(16)
+    run.font.bold = True
+    set_chinese_font(run, '黑体')
+
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     para.paragraph_format.space_before = Pt(12)
     para.paragraph_format.space_after = Pt(8)
+
     return para
 
+
 def add_heading_level1(doc, text):
-    """添加一级标题（X.X）"""
     para = doc.add_paragraph()
+
     run = para.add_run(text)
     run.font.size = Pt(14)
     set_chinese_font(run, '黑体')
+
     para.paragraph_format.space_before = Pt(12)
     para.paragraph_format.space_after = Pt(8)
+
     return para
 
+
 def add_heading_level2(doc, text):
-    """添加二级标题（X.X.X）"""
     para = doc.add_paragraph()
+
     run = para.add_run(text)
     run.font.size = Pt(13)
     set_chinese_font(run, '黑体')
+
     para.paragraph_format.space_before = Pt(8)
     para.paragraph_format.space_after = Pt(6)
+
     return para
 
-def add_normal_paragraph(doc, text, first_line_indent=True):
-    """添加正文段落，处理参考文献引用为上标+粗体"""
-    para = doc.add_paragraph()
 
-    # 使用正则表达式分割文本，保留引用标记
-    # 匹配 [数字] 或 [数字][数字] 这样的模式
-    pattern = r'(\[\d+\](?:\[\d+\])*)'
-    parts = re.split(pattern, text)
+def add_citation_run(para, text):
+    """处理 [数字] 为上标"""
+
+    parts = re.split(r'(\[\d+\](?:\[\d+\])*)', text)
 
     for part in parts:
+
         if not part:
             continue
 
-        # 检查是否是引用标记
         if re.match(r'^\[\d+\]', part):
-            # 这是引用标记，设置为上标+粗体
+
             run = para.add_run(part)
-            run.font.size = Pt(12)
+            run.font.size = Pt(10.5)
             run.font.superscript = True
-            run.font.bold = True
             set_chinese_font(run, '宋体')
+
         else:
-            # 普通文本
+
             run = para.add_run(part)
             run.font.size = Pt(12)
             set_chinese_font(run, '宋体')
+
+
+def add_normal_paragraph(doc, text):
+    """普通段落"""
+
+    para = doc.add_paragraph()
+
+    add_citation_run(para, text)
 
     para.paragraph_format.line_spacing = Pt(20)
-    if first_line_indent:
-        para.paragraph_format.first_line_indent = Cm(1)
+    para.paragraph_format.first_line_indent = Cm(1)
+
     return para
 
+
 def add_keywords(doc, text):
-    """添加关键词"""
     para = doc.add_paragraph()
-    # 关键词标签
+
     run1 = para.add_run('关键词：')
     run1.font.size = Pt(12)
     run1.font.bold = True
     set_chinese_font(run1, '黑体')
-    # 关键词内容
+
     run2 = para.add_run(text)
     run2.font.size = Pt(12)
     set_chinese_font(run2, '宋体')
+
     para.paragraph_format.line_spacing = Pt(20)
+
     return para
+
 
 def add_table_title(doc, text):
-    """添加表格标题"""
     para = doc.add_paragraph()
+
     run = para.add_run(text)
     run.font.size = Pt(10.5)
     set_chinese_font(run, '黑体')
+
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    para.paragraph_format.space_before = Pt(6)
-    para.paragraph_format.space_after = Pt(6)
+    para.paragraph_format.space_after = Pt(8)
+
     return para
+
+
+# ==================== 真实表格生成 ====================
+
+def create_real_table(doc, title, table_lines):
+    """将 - 分隔的数据转换为真实Word表格"""
+
+    if not table_lines:
+        return
+
+    add_table_title(doc, title)
+
+    # 解析表头
+    headers = [h.strip() for h in table_lines[0].split('-')]
+
+    # 解析数据
+    data = []
+
+    for line in table_lines[1:]:
+
+        if line.strip():
+            row = [cell.strip() for cell in line.split('-')]
+            data.append(row)
+
+    # 创建表格
+    table = doc.add_table(rows=len(data) + 1, cols=len(headers))
+    table.style = 'Table Grid'
+
+    # ==================== 固定行高 ====================
+
+    for row in table.rows:
+        row.height = Cm(0.8)
+
+    # ==================== 表头 ====================
+
+    for j, header in enumerate(headers):
+
+        cell = table.cell(0, j)
+
+        cell.text = header
+
+        run = cell.paragraphs[0].runs[0]
+
+        run.font.bold = True
+        run.font.size = Pt(10.5)
+
+        set_chinese_font(run, '黑体')
+
+        # 水平居中
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # 垂直居中
+        cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+
+        # 灰色表头背景
+        shading_elm = parse_xml(
+            r'<w:shd {} w:fill="D9D9D9"/>'.format(nsdecls('w'))
+        )
+
+        cell._tc.get_or_add_tcPr().append(shading_elm)
+
+    # ==================== 数据 ====================
+
+    for i, row in enumerate(data):
+
+        for j, text in enumerate(row):
+
+            if j < len(headers):
+
+                cell = table.cell(i + 1, j)
+
+                cell.text = text
+
+                run = cell.paragraphs[0].runs[0]
+
+                run.font.size = Pt(10)
+
+                set_chinese_font(run, '宋体')
+
+                # 水平居中
+                cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+                # 垂直居中
+                cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+
+    # ==================== 设置列宽 ====================
+
+    for column in table.columns:
+
+        for cell in column.cells:
+            cell.width = Inches(2.0)
+
+    # 表格后空行
+    doc.add_paragraph()
+
 
 def add_figure_placeholder(doc, text):
-    """添加图片占位符，前面留10个空行"""
-    # 添加10个空行作为图片占位
-    for _ in range(10):
+
+    for _ in range(8):
         doc.add_paragraph()
 
-    # 添加图片标题
     para = doc.add_paragraph()
+
     run = para.add_run(text)
     run.font.size = Pt(10.5)
+
     set_chinese_font(run, '黑体')
+
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    para.paragraph_format.space_before = Pt(6)
     para.paragraph_format.space_after = Pt(6)
+
     return para
+
 
 def add_reference(doc, text):
-    """添加参考文献条目"""
+
     para = doc.add_paragraph()
+
     run = para.add_run(text)
+
     run.font.size = Pt(10.5)
+
     set_chinese_font(run, '宋体')
+
     para.paragraph_format.line_spacing = Pt(18)
+
     para.paragraph_format.first_line_indent = Cm(-0.5)
     para.paragraph_format.left_indent = Cm(0.5)
+
     return para
 
-def main():
-    print("=" * 60)
-    print("开始生成毕业设计论文 Word 文档（方案一：基础版）")
-    print("=" * 60)
 
-    # 读取论文内容
+def main():
+
+    print("=" * 70)
+    print("开始生成毕业设计论文 Word 文档（最终优化版）")
+    print("=" * 70)
+
     try:
+
         with open('毕业设计论文.txt', 'r', encoding='utf-8') as f:
             lines = f.readlines()
+
     except FileNotFoundError:
+
         print("错误：找不到 毕业设计论文.txt 文件")
         return
 
-    # 创建文档
     doc = Document()
 
-    # 设置页面
+    # ==================== 页面设置 ====================
+
     section = doc.sections[0]
-    section.page_height = Cm(29.7)  # A4
+
+    section.page_height = Cm(29.7)
     section.page_width = Cm(21)
+
     section.left_margin = Cm(3)
     section.right_margin = Cm(2.5)
+
     section.top_margin = Cm(2.5)
     section.bottom_margin = Cm(2.5)
 
-    print("正在处理论文内容...")
-
-    # 逐行处理
     i = 0
-    total_lines = len(lines)
 
-    while i < total_lines:
+    while i < len(lines):
+
         line = lines[i].strip()
 
         if not line:
             i += 1
             continue
 
-        # 跳过第一行标题（已经单独处理）
+        # ==================== 标题 ====================
+
         if i == 0 and line.startswith('题目名称：'):
+
             title_text = line.replace('题目名称：', '').strip()
+
             add_title(doc, title_text)
-            doc.add_paragraph()  # 空行
+
+            doc.add_paragraph()
+
             i += 1
             continue
 
-        # 检测摘要
-        if line == '摘  要':
+        # ==================== 摘要 ====================
+
+        if line == '摘  要' or line == 'Abstract':
+
             add_section_title(doc, line)
-            doc.add_paragraph()  # 空行
+
+            doc.add_paragraph()
+
             i += 1
             continue
 
-        # 检测Abstract
-        if line == 'Abstract':
-            add_section_title(doc, line)
-            doc.add_paragraph()  # 空行
-            i += 1
-            continue
+        # ==================== 中文关键词 ====================
 
-        # 检测关键词
         if line.startswith('关键词：'):
-            keywords_text = line.replace('关键词：', '').strip()
-            add_keywords(doc, keywords_text)
+
+            add_keywords(doc, line.replace('关键词：', '').strip())
+
             i += 1
             continue
 
-        # 检测Keywords
+        # ==================== 英文关键词 ====================
+
         if line.startswith('Keywords:'):
+
             para = doc.add_paragraph()
+
             run1 = para.add_run('Keywords: ')
             run1.font.size = Pt(12)
             run1.font.bold = True
             run1.font.name = 'Times New Roman'
-            run2 = para.add_run(line.replace('Keywords:', '').strip())
+
+            run2 = para.add_run(
+                line.replace('Keywords:', '').strip()
+            )
+
             run2.font.size = Pt(12)
             run2.font.name = 'Times New Roman'
+
             para.paragraph_format.line_spacing = Pt(20)
+
             i += 1
             continue
 
-        # 检测章标题（第X章）
+        # ==================== 章节 ====================
+
         if re.match(r'^第\d+章\s+', line):
-            doc.add_page_break()  # 新章节另起一页
+
+            doc.add_page_break()
+
             add_chapter_title(doc, line)
-            doc.add_paragraph()  # 空行
+
+            doc.add_paragraph()
+
             i += 1
             continue
 
-        # 检测一级标题（X.X）
+        # ==================== 一级标题 ====================
+
         if re.match(r'^\d+\.\d+\s+', line) and not re.match(r'^\d+\.\d+\.\d+', line):
+
             add_heading_level1(doc, line)
+
             i += 1
             continue
 
-        # 检测二级标题（X.X.X）
+        # ==================== 二级标题 ====================
+
         if re.match(r'^\d+\.\d+\.\d+\s+', line):
+
             add_heading_level2(doc, line)
+
             i += 1
             continue
 
-        # 检测表格标题
+        # ==================== 表格 ====================
+
         if re.match(r'^表\d+-\d+', line):
-            add_table_title(doc, line)
-            # 读取表格内容（空格对齐的纯文本）
+
+            table_title = line
+
             i += 1
+
             table_lines = []
-            while i < total_lines:
+
+            while i < len(lines):
+
                 next_line = lines[i].strip()
-                # 如果遇到空行或新的标题，表格结束
-                if not next_line or re.match(r'^(第\d+章|\d+\.\d+|表\d+-\d+|【图)', next_line):
+
+                if (
+                    not next_line
+                    or re.match(
+                        r'^(第\d+章|\d+\.\d+|表\d+-\d+|【图|参考文献|附  录|致  谢)',
+                        next_line
+                    )
+                ):
                     break
+
                 table_lines.append(next_line)
+
                 i += 1
 
-            # 添加表格内容为预格式化文本（保持空格对齐）
-            if table_lines:
-                para = doc.add_paragraph()
-                run = para.add_run('\n'.join(table_lines))
-                run.font.size = Pt(10.5)
-                run.font.name = 'Courier New'  # 使用等宽字体保持对齐
-                set_chinese_font(run, '宋体')
-                para.paragraph_format.line_spacing = Pt(16)
+            create_real_table(doc, table_title, table_lines)
+
             continue
 
-        # 检测图片占位符
-        if re.match(r'^【图\d+-\d+', line):
-            # 去掉【】和"插入位置"字样
-            figure_text = line.replace('【', '').replace('】', '').replace('插入位置', '').strip()
+        # ==================== 图片占位 ====================
+
+        if re.match(r'^【图', line):
+
+            figure_text = (
+                line.replace('【', '')
+                .replace('】', '')
+                .replace('插入位置', '')
+                .strip()
+            )
+
             add_figure_placeholder(doc, figure_text)
+
             i += 1
             continue
 
-        # 检测参考文献标题
-        if line == '参考文献':
+        # ==================== 特殊章节 ====================
+
+        if line in ['参考文献', '附  录', '致  谢']:
+
             doc.add_page_break()
+
             add_section_title(doc, line, is_center=True)
-            doc.add_paragraph()  # 空行
+
+            doc.add_paragraph()
+
             i += 1
             continue
 
-        # 检测参考文献条目
+        # ==================== 参考文献 ====================
+
         if re.match(r'^\[\d+\]', line):
+
             add_reference(doc, line)
+
             i += 1
             continue
 
-        # 检测附录标题
-        if line == '附  录':
-            doc.add_page_break()
-            add_section_title(doc, line, is_center=True)
-            doc.add_paragraph()  # 空行
-            i += 1
-            continue
+        # ==================== 普通段落 ====================
 
-        # 检测附录子标题（附录 A、附录 B、附录 C）
-        if re.match(r'^附录\s+[A-Z]', line):
-            add_heading_level1(doc, line)
-            i += 1
-            continue
-
-        # 检测致谢标题
-        if line == '致  谢':
-            doc.add_page_break()
-            add_section_title(doc, line, is_center=True)
-            doc.add_paragraph()  # 空行
-            i += 1
-            continue
-
-        # 普通段落
         add_normal_paragraph(doc, line)
+
         i += 1
 
-    # 保存文档
+    # ==================== 保存 ====================
+
     output_file = '毕业设计论文.docx'
+
     doc.save(output_file)
 
-    print("=" * 60)
     print(f"✓ Word 文档已生成：{output_file}")
-    print("=" * 60)
-    print("\n后续步骤：")
-    print("1. 打开生成的 Word 文档")
-    print("2. 表格已保留文本格式，可以：")
-    print("   - 选中表格内容")
-    print("   - 点击【插入】→【表格】→【文本转换成表格】")
-    print("   - 选择【其他字符】，输入 --- 作为分隔符")
-    print("3. 从 论文图表汇总.html 中截取图表并插入到对应位置")
-    print("4. 使用格式刷统一调整格式细节")
-    print("=" * 60)
+    print("✓ 已支持：")
+    print("  1. 上标引用")
+    print("  2. 真实Word表格")
+    print("  3. 表格水平+垂直居中")
+    print("  4. 固定行高")
+    print("  5. 表头灰底")
+
 
 if __name__ == '__main__':
     main()
