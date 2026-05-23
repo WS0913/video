@@ -29,7 +29,6 @@ Keywords: Inspection Robot; Real-time Video Transmission; WebRTC; MediaMTX; Fast
 
 1.1 课题背景与研究意义
 
-1.1.1 课题背景
 电厂作为典型的大型工业场景，设备种类多、运行环境复杂、巡检点位分散，部分区域还存在高温、高压、强噪声、粉尘、狭小空间或电磁干扰等风险。长期以来，电厂巡检主要依赖人工定时巡查，巡检人员需要根据路线逐一检查设备状态，并通过肉眼观察、仪表读数和经验判断发现异常。该方式虽然灵活，但也存在巡检效率受人员经验影响大、危险区域进入成本高、异常留证不充分、远程协同能力弱等不足。
 
 随着移动机器人、嵌入式计算、无线通信和视频处理技术的发展，巡检机器人逐渐应用于电力、化工、矿山、轨道交通等行业[1]。机器人可搭载摄像头进入现场，完成图像采集和视频回传。对于远程监控人员而言，实时视频是理解现场情况最直接的数据形式，也是进行人工复核和异常判断的基础。因此，面向巡检机器人的视频传输系统不仅需要“能看见”，还需要满足低延迟、稳定性、弱网适应和设备可管理等要求[10]。
@@ -40,7 +39,6 @@ Keywords: Inspection Robot; Real-time Video Transmission; WebRTC; MediaMTX; Fast
 
 硬件平台方面，摄像头采集端部署在树莓派5（Raspberry Pi 5）单板计算机上，搭载USB摄像头进行视频采集。树莓派5采用64位四核Cortex-A76处理器，主频2.4GHz，配备4GB或8GB LPDDR4X内存，具备足够的计算能力完成视频采集、编码和WebRTC推流。无线通信采用WiFi 5（802.11ac）标准，支持2.4GHz和5GHz双频段，理论带宽可达433Mbps，满足720P视频传输需求。后端服务器和MediaMTX部署在局域网内的服务器或云端，前端通过浏览器访问，无需额外硬件。
 
-1.1.2 研究意义
 本课题的研究意义主要体现在理论意义和实际意义两个方面。
 
 从理论意义上看，本文将 WebRTC 低延迟通信技术、流媒体服务器接入机制、前后端分离架构和设备心跳管理机制结合起来，形成了一套较完整的视频传输系统设计方法。系统不仅关注视频编码与播放，还将设备注册、在线检测、播放端连接恢复和视频状态上报等工程环节纳入统一设计，有助于理解实时视频系统从采集端到浏览器端的主要技术链路。
@@ -52,9 +50,9 @@ Keywords: Inspection Robot; Real-time Video Transmission; WebRTC; MediaMTX; Fast
 1.2 国内外研究现状
 实时视频传输一直是远程监控、视频会议、安防监控、无人机、机器人和工业互联网领域的重要研究内容。传统视频监控系统多采用 RTSP、RTMP、HLS 等协议。RTSP 适用于摄像头和流媒体服务器之间的实时流传输，具有实现成熟、设备兼容性强等优点[1]；HLS 具有良好的浏览器兼容性和 CDN 分发能力，但通常存在数秒级甚至更高的延迟，不适合对实时性要求较高的巡检控制场景。
 
-近年来，WebRTC 因其低延迟、浏览器原生支持、支持拥塞控制和点对点媒体传输等特点，逐渐被应用于远程控制、云游戏、无人机视频回传、机器人遥操作和实时监控等领域[2][16]。WebRTC 原本主要面向浏览器之间的音视频通信，随着媒体服务器和协议标准的发展，WebRTC 也开始用于“设备到服务器”和“服务器到浏览器”的流媒体分发场景。WHIP 和 WHEP 分别用于 WebRTC 推流和拉流的 HTTP 接入过程[3][4]，降低了传统 WebRTC 信令设计的复杂度，使流媒体服务器可以通过标准化接口接入 WebRTC 流。
+近年来，WebRTC 因其低延迟、浏览器原生支持、支持拥塞控制和点对点媒体传输等特点，逐渐被应用于远程控制、云游戏、无人机视频回传、机器人遥操作和实时监控等领域[2][12]。WebRTC 原本主要面向浏览器之间的音视频通信，随着媒体服务器和协议标准的发展，WebRTC 也开始用于“设备到服务器”和“服务器到浏览器”的流媒体分发场景。WHIP 和 WHEP 分别用于 WebRTC 推流和拉流的 HTTP 接入过程[8][9]，降低了传统 WebRTC 信令设计的复杂度，使流媒体服务器可以通过标准化接口接入 WebRTC 流。
 
-国外在实时视频传输方面起步较早，相关研究集中在低延迟编码、拥塞控制、端到端传输质量评估、多路视频分发和边缘计算等方向。部分工业机器人和无人系统已将 WebRTC 用于远程控制画面回传，并结合自适应码率策略改善弱网场景下的用户体验。国内相关研究则更多结合具体应用场景展开，例如智慧电厂、矿山巡检、变电站巡检、安防监控和无人机巡查等。在工程实践中，常见方案包括基于 RTSP 的局域网监控方案、基于 GB/T 28181 的安防接入方案、基于 HLS/FLV 的网页播放方案，以及基于 WebRTC 的低延迟播放方案。国内在巡检机器人应用、WebRTC 低延迟传输与工业场景视频监控等方面也有相关研究报道，如文献[12-14]所述。
+国外在实时视频传输方面起步较早，相关研究集中在低延迟编码、拥塞控制、端到端传输质量评估、多路视频分发和边缘计算等方向。部分工业机器人和无人系统已将 WebRTC 用于远程控制画面回传，并结合自适应码率策略改善弱网场景下的用户体验。国内相关研究则更多结合具体应用场景展开，例如智慧电厂、矿山巡检、变电站巡检、安防监控和无人机巡查等。在工程实践中，常见方案包括基于 RTSP 的局域网监控方案、基于 GB/T 28181 的安防接入方案、基于 HLS/FLV 的网页播放方案，以及基于 WebRTC 的低延迟播放方案。国内在巡检机器人应用、WebRTC 低延迟传输与工业场景视频监控等方面也有相关研究报道。
 
 总体来看，现有方案在不同场景下各有优势，但面向实际工程应用时，仍存在一些问题：一是仅实现视频播放而忽视设备管理、心跳检测和状态同步；二是部分方案延迟较高，不能满足巡检实时性要求；三是弱网情况下缺少自动降级与恢复机制。本文基于这些问题，设计并实现一个前后端分离、模块清晰、支持低延迟播放和弱网适应的端到端视频传输系统。
 
@@ -111,19 +109,19 @@ Keywords: Inspection Robot; Real-time Video Transmission; WebRTC; MediaMTX; Fast
 2.2 流媒体传输相关技术
 
 2.2.1 RTSP 协议
-RTSP 即实时流传输协议，主要用于控制音视频流的播放、暂停、建立会话和传输等过程。RTSP 本身负责控制信令，媒体数据通常通过 RTP/RTCP 传输。由于大量网络摄像机和视频服务器支持 RTSP，因此 RTSP 在安防监控和工业视频场景中应用广泛[1][15]。
+RTSP 即实时流传输协议，主要用于控制音视频流的播放、暂停、建立会话和传输等过程。RTSP 本身负责控制信令，媒体数据通常通过 RTP/RTCP 传输。由于大量网络摄像机和视频服务器支持 RTSP，因此 RTSP 在安防监控和工业视频场景中应用广泛[11][15]。
 
-本系统保留 RTSP 推流模块，摄像头采集端可通过 FFmpeg 将原始视频帧编码为 H.264，并推送至 MediaMTX 的 RTSP 地址[8][5]。FFmpeg 推流参数中使用 libx264 编码器、ultrafast 预设、zerolatency 调优参数、较小缓冲区和 TCP 传输方式，以降低编码和传输过程中的延迟[8]。RTSP 方案的优点是成熟稳定、便于调试、兼容性好；不足是浏览器无法原生播放 RTSP，需要服务器进行协议转换或借助插件，因此在 Web 端低延迟播放时通常需要与 WebRTC 等协议配合[2]。
+本系统保留 RTSP 推流模块，摄像头采集端可通过 FFmpeg 将原始视频帧编码为 H.264，并推送至 MediaMTX 的 RTSP 地址[13][5]。FFmpeg 推流参数中使用 libx264 编码器、ultrafast 预设、zerolatency 调优参数、较小缓冲区和 TCP 传输方式，以降低编码和传输过程中的延迟[13]。RTSP 方案的优点是成熟稳定、便于调试、兼容性好；不足是浏览器无法原生播放 RTSP，需要服务器进行协议转换或借助插件，因此在 Web 端低延迟播放时通常需要与 WebRTC 等协议配合[2]。
 
 2.2.2 WebRTC 协议
-WebRTC 是一种支持浏览器和应用程序进行实时音视频通信的技术体系，具备低延迟、浏览器原生支持、拥塞控制、NAT 穿透和安全传输等特点[2][16]。WebRTC 通过 RTCPeerConnection 建立媒体连接，并使用 SRTP 传输音视频数据[16]。
+WebRTC 是一种支持浏览器和应用程序进行实时音视频通信的技术体系，具备低延迟、浏览器原生支持、拥塞控制、NAT 穿透和安全传输等特点[2][12]。WebRTC 通过 RTCPeerConnection 建立媒体连接，并使用 SRTP 传输音视频数据[12]。
 
 对于巡检机器人远程监控场景，WebRTC 的主要优势在于低延迟。传统 HLS 播放通常存在较高分片延迟，而 WebRTC 可实现较低的端到端时延，更适合远程巡检人员及时观察设备状态。WebRTC 还具备网络拥塞控制能力，可以根据网络情况调整发送策略，从而提升弱网环境下的可用性。
 
-本系统使用 WebRTC 作为主要的低延迟播放方案。摄像头端通过 aiortc 创建 PeerConnection 并添加视频轨道[17]，将采集到的画面推送至 MediaMTX[5]；前端通过 WHEP 接入地址从 MediaMTX 拉取视频流[4]，并在 HTMLVideoElement 中播放。该方式避免了浏览器直接处理 RTSP 的兼容性问题，同时满足低延迟监控需求[2]。
+本系统使用 WebRTC 作为主要的低延迟播放方案。摄像头端通过 aiortc 创建 PeerConnection 并添加视频轨道[14]，将采集到的画面推送至 MediaMTX[5]；前端通过 WHEP 接入地址从 MediaMTX 拉取视频流[9]，并在 HTMLVideoElement 中播放。该方式避免了浏览器直接处理 RTSP 的兼容性问题，同时满足低延迟监控需求[2]。
 
 2.2.3 WHIP/WHEP 接入机制
-WHIP 全称为 WebRTC-HTTP Ingestion Protocol，主要用于将 WebRTC 媒体流通过 HTTP 接口推送到流媒体服务器[3]。WHEP 全称为 WebRTC-HTTP Egress Protocol，主要用于客户端从服务器拉取 WebRTC 媒体流[4]。两者都通过 HTTP 传输 SDP offer/answer，简化了传统 WebRTC 应用中自定义信令服务器的开发[3][4]。
+WHIP 全称为 WebRTC-HTTP Ingestion Protocol，主要用于将 WebRTC 媒体流通过 HTTP 接口推送到流媒体服务器[8]。WHEP 全称为 WebRTC-HTTP Egress Protocol，主要用于客户端从服务器拉取 WebRTC 媒体流[9]。两者都通过 HTTP 传输 SDP offer/answer，简化了传统 WebRTC 应用中自定义信令服务器的开发[8][9]。
 
 在本系统中，摄像头采集端构造 WHIP 地址，格式为：
 http://服务器地址:8889/设备ID/whip
@@ -138,21 +136,21 @@ http://服务器地址:8889/设备ID/whep
 2.3 系统开发技术
 
 2.3.1 FastAPI 后端框架
-FastAPI 是一个基于 Python 的现代 Web 框架，具有异步支持、类型提示友好、自动生成接口文档、开发效率高等特点[6]。FastAPI 使用 Pydantic 进行数据校验，能够根据类型定义自动完成请求参数校验和响应模型生成；同时其基于 Starlette 和 ASGI，适合构建高性能异步 Web 服务[6]。
+FastAPI 是一个基于 Python 的现代 Web 框架，具有异步支持、类型提示友好、自动生成接口文档、开发效率高等特点[3]。FastAPI 使用 Pydantic 进行数据校验，能够根据类型定义自动完成请求参数校验和响应模型生成；同时其基于 Starlette 和 ASGI，适合构建高性能异步 Web 服务[3]。
 
-本系统后端使用 FastAPI 作为 API 服务框架，主要实现用户认证、设备注册、设备心跳、设备查询、设备删除、视频状态上报和健康检查等功能[6]。系统使用 SQLAlchemy 定义用户和设备等数据模型，并通过异步数据库会话完成数据访问[9]。FastAPI 自动生成的 Swagger UI 也便于系统调试和接口测试[6]。
+本系统后端使用 FastAPI 作为 API 服务框架，主要实现用户认证、设备注册、设备心跳、设备查询、设备删除、视频状态上报和健康检查等功能[3]。系统使用 SQLAlchemy 定义用户和设备等数据模型，并通过异步数据库会话完成数据访问[4]。FastAPI 自动生成的 Swagger UI 也便于系统调试和接口测试[3]。
 
 2.3.2 Vue3 + Vite 前端框架
-Vue3 是渐进式 JavaScript 前端框架，具有响应式数据绑定、组件化开发和组合式 API 等特点[7]。Vite 是新一代前端构建工具，利用浏览器原生 ES Module 实现快速开发启动和热更新，适合中小型前端应用快速开发[7]。
+Vue3 是渐进式 JavaScript 前端框架，具有响应式数据绑定、组件化开发和组合式 API 等特点[6]。Vite 是新一代前端构建工具，利用浏览器原生 ES Module 实现快速开发启动和热更新，适合中小型前端应用快速开发[6]。
 
-本系统前端使用 Vue3 + Vite + TypeScript 构建[7]，使用 Vue Router 管理页面路由，使用 Pinia 维护用户、设备和配置等状态，使用 Element Plus 提供表单、表格、按钮、对话框和布局组件[10]。实时视频播放页面通过播放器组件封装 WHEP 拉流逻辑[4]，设备管理页面通过 API 获取设备列表并展示设备状态。该技术组合具有开发效率高、结构清晰、维护方便等优点。
+本系统前端使用 Vue3 + Vite + TypeScript 构建[6]，使用 Vue Router 管理页面路由，使用 Pinia 维护用户、设备和配置等状态，使用 Element Plus 提供表单、表格、按钮、对话框和布局组件[7]。实时视频播放页面通过播放器组件封装 WHEP 拉流逻辑[9]，设备管理页面通过 API 获取设备列表并展示设备状态。该技术组合具有开发效率高、结构清晰、维护方便等优点。
 
 2.3.3 MediaMTX 流媒体服务
 MediaMTX 是一个轻量级、跨平台的流媒体服务器，支持 RTSP、RTMP、HLS、WebRTC、SRT 等多种协议[5]。它可以接收来自摄像头或推流程序的视频流，并向不同客户端进行转发[5]。
 
-本系统使用 MediaMTX 作为独立流媒体服务，主要使用其 WebRTC 端口完成 WHIP 推流和 WHEP 拉流[5]。MediaMTX 在系统中的作用包括：第一，接收摄像头端的 WHIP 推流[3]；第二，将视频流转换为浏览器可播放的 WebRTC 流[2]；第三，按路径动态创建视频流，降低业务后端处理媒体数据的压力。
+本系统使用 MediaMTX 作为独立流媒体服务，主要使用其 WebRTC 端口完成 WHIP 推流和 WHEP 拉流[5]。MediaMTX 在系统中的作用包括：第一，接收摄像头端的 WHIP 推流[8]；第二，将视频流转换为浏览器可播放的 WebRTC 流[2]；第三，按路径动态创建视频流，降低业务后端处理媒体数据的压力。
 
-通过引入 MediaMTX[5]，系统避免了在 FastAPI 后端中自行实现复杂的媒体转发逻辑，使后端可以专注于业务管理[6]，而流媒体服务专注于音视频接入和分发，整体架构更加清晰。
+通过引入 MediaMTX[5]，系统避免了在 FastAPI 后端中自行实现复杂的媒体转发逻辑，使后端可以专注于业务管理[3]，而流媒体服务专注于音视频接入和分发，整体架构更加清晰。
 
 
 第3章 系统需求分析
@@ -656,24 +654,21 @@ FastAPI 后端---API 请求和心跳处理---较低---不直接转发媒体数�
 
 
 参考文献
-[1] IETF. Real Time Streaming Protocol Version 2.0: RFC 7826[S]. 2016.
+[1] 张辉，杜瑞，钟杭，曹意宏，王耀南. 电力设施多模态精细化机器人巡检关键技术及应用[J]. 自动化学报，2025，51(1)：20-42.
 [2] IETF. WebRTC: Real-Time Communication in Browsers: RFC 8825[S]. 2021.
-[3] IETF. WebRTC-HTTP ingestion protocol (WHIP): Internet-Draft draft-ietf-wish-whip-16[S]. 2025.
-[4] IETF. WebRTC-HTTP Egress Protocol (WHEP): Internet-Draft draft-ietf-wish-whep-03[S]. 2024.
+[3] FastAPI Documentation. FastAPI Framework User Guide[EB/OL].
+[4] SQLAlchemy Documentation. SQLAlchemy ORM Documentation[EB/OL].
 [5] MediaMTX Documentation. MediaMTX Official Documentation[EB/OL].
-[6] FastAPI Documentation. FastAPI Framework User Guide[EB/OL].
-[7] Vue.js Documentation. Vue 3 Official Guide[EB/OL].
-[8] FFmpeg Documentation. FFmpeg Documentation[EB/OL].
-[9] SQLAlchemy Documentation. SQLAlchemy ORM Documentation[EB/OL].
-[10] Element Plus Documentation. Element Plus Component Library[EB/OL].
-[11] 刘云浩. 物联网导论[M]. 北京：科学出版社，2013.
-[12] 张立臣，王志良. 智能巡检机器人技术及应用研究[J]. 自动化与仪器仪表，2021.
-[13] 陈亮，李强. 基于 WebRTC 的低延迟视频传输技术研究[J]. 计算机应用与软件，2022.
-[14] 王磊，赵明. 工业互联网环境下视频监控系统设计与实现[J]. 信息技术与信息化，2023.
+[6] Vue.js Documentation. Vue 3 Official Guide[EB/OL].
+[7] Element Plus Documentation. Element Plus Component Library[EB/OL].
+[8] IETF. WebRTC-HTTP ingestion protocol (WHIP): Internet-Draft draft-ietf-wish-whip-16[S]. 2025.
+[9] IETF. WebRTC-HTTP Egress Protocol (WHEP): Internet-Draft draft-ietf-wish-whep-03[S]. 2024.
+[10] 刘云浩. 物联网导论[M]. 北京：科学出版社，2013.
+[11] IETF. Real Time Streaming Protocol Version 2.0: RFC 7826[S]. 2016.
+[12] W3C. WebRTC 1.0: Real-Time Communication Between Browsers[EB/OL].
+[13] FFmpeg Documentation. FFmpeg Documentation[EB/OL].
+[14] aiortc Documentation[EB/OL].
 [15] 谢希仁. 计算机网络（第8版）[M]. 北京：电子工业出版社，2021.
-[16] W3C. WebRTC 1.0: Real-Time Communication Between Browsers[EB/OL].
-[17] aiortc Documentation[EB/OL].
-[18] 张辉，杜瑞，钟杭，曹意宏，王耀南. 电力设施多模态精细化机器人巡检关键技术及应用[J]. 自动化学报，2025，51(1)：20-42.
 
 
 附录
