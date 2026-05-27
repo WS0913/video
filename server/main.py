@@ -43,13 +43,13 @@ async def lifespan(app: FastAPI):
 
     # 关闭时清理
     logger.info("开始清理资源...")
-    
+
     scanner.stop()
     scanner_task.cancel()
-    
+
     monitor.stop()
     monitor_task.cancel()
-    
+
     try:
         await asyncio.gather(scanner_task, monitor_task, return_exceptions=True)
     except Exception as e:
@@ -67,14 +67,27 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# 配置CORS（允许所有来源以支持局域网访问）
+# 配置CORS（从环境变量读取允许的来源）
+# 开发环境可以使用 CORS_ORIGINS="*" 允许所有来源
+# 生产环境应该明确指定允许的前端地址
+cors_origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS != "*" else ["*"]
+allow_credentials = settings.CORS_ORIGINS != "*"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 允许所有来源（生产环境应该限制）
-    allow_credentials=False,  # 允许所有来源时必须设为False
+    allow_origins=cors_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 启动时输出安全提示
+if settings.SECRET_KEY == "your-secret-key-change-this-in-production":
+    logger.warning("⚠️  警告：正在使用默认JWT密钥，生产环境必须修改 SECRET_KEY")
+if settings.DEVICE_API_TOKEN == "device-api-token-change-in-production":
+    logger.warning("⚠️  警告：正在使用默认设备API令牌，生产环境必须修改 DEVICE_API_TOKEN")
+if settings.CORS_ORIGINS == "*":
+    logger.warning("⚠️  警告：CORS允许所有来源，生产环境建议限制为具体前端地址")
 
 # 注册路由
 app.include_router(api_auth.router, prefix="/api/auth", tags=["认证"])

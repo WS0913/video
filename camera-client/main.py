@@ -18,7 +18,11 @@ class CameraClient:
         self.device_manager: DeviceManager = None
         self.running = False
         self.loop = None
-        
+        self.current_profile = "good"
+        self.reconnect_count = 0
+        self.last_stream_state = "inactive"
+        self.last_report_snapshot = None
+
     async def setup(self) -> bool:
         """初始化设置"""
         try:
@@ -36,16 +40,15 @@ class CameraClient:
                 level=config.LOG_LEVEL
             )
 
-            logger.info("=" * 60)
-            logger.info("摄像头采集端启动 (WHIP模式)")
-            logger.info("=" * 60)
+            logger.info("摄像头采集端启动 mode=WHIP")
 
             # 初始化设备管理器
             self.device_manager = DeviceManager(
                 server_url=config.SERVER_URL,
                 device_name=config.DEVICE_NAME,
                 device_type=config.DEVICE_TYPE,
-                location=config.DEVICE_LOCATION
+                location=config.DEVICE_LOCATION,
+                device_api_token=config.DEVICE_API_TOKEN
             )
 
             # 注册设备
@@ -57,18 +60,7 @@ class CameraClient:
             self.device_manager.start_heartbeat(config.HEARTBEAT_INTERVAL)
 
             # 初始化WHIP推流器
-            # MediaMTX WHIP端点: http://localhost:8889/{path}/whip
-            whip_url = f"http://{config.RTSP_SERVER}:8889/{self.device_manager.device_id}/whip"
-
-            self.streamer = WHIPStreamer(
-                whip_url=whip_url,
-                camera_id=config.CAMERA_ID,
-                width=config.RESOLUTION_WIDTH,
-                height=config.RESOLUTION_HEIGHT,
-                fps=config.FPS
-            )
-
-            if not await self.streamer.start():
+            if not await self.start_streamer("good"):
                 logger.error("WHIP推流启动失败")
                 return False
 
@@ -78,7 +70,135 @@ class CameraClient:
         except Exception as e:
             logger.error(f"初始化失败: {e}")
             return False
-    
+
+    async def start_streamer(self, profile_name: str) -> bool:
+        """按网络档位启动WHIP推流"""
+        profile = config.NETWORK_PROFILES[profile_name]
+        whip_url = f"http://{config.RTSP_SERVER}:8889/{self.device_manager.device_id}/whip"
+
+        self.current_profile = profile_name
+        self.last_stream_state = "starting"
+        self.device_manager.set_network_level(profile_name)
+        logger.info(
+            f"启动推流 profile={profile_name} "
+            f"resolution={profile['width']}x{profile['height']} "
+            f"fps={profile['fps']} bitrate={profile['bitrate']}kbps"
+        )
+
+        self.streamer = WHIPStreamer(
+            whip_url=whip_url,
+            camera_id=config.CAMERA_ID,
+            width=profile["width"],
+            height=profile["height"],
+            fps=profile["fps"],
+            bitrate=profile["bitrate"],
+            on_state_change=self.handle_stream_state_change,
+        )
+
+        started = await self.streamer.start()
+        self.last_stream_state = "active" if started else "error"
+        self.report_stream_status()
+        return started
+
+    def handle_stream_state_change(self, state: str):
+        """记录WebRTC连接状态，供主循环执行重连"""
+        if state in {"connected", "completed"}:
+            self.last_stream_state = "active"
+        elif state in {"failed", "disconnected", "closed"}:
+            self.last_stream_state = "reconnecting"
+        else:
+            self.last_stream_state = state
+
+        self.report_stream_status()
+
+    def report_stream_status(self):
+        """把当前档位、码率和重连次数同步到后端"""
+        if not self.device_manager or not self.device_manager.device_id:
+            return
+
+        profile = config.NETWORK_PROFILES[self.current_profile]
+        snapshot = (
+            self.current_profile,
+            profile["width"],
+            profile["height"],
+            profile["fps"],
+            profile["bitrate"],
+            self.reconnect_count,
+            self.last_stream_state,
+            self.device_manager.last_heartbeat_rtt_ms,
+            self.device_manager.packet_loss_estimate,
+        )
+        changed = snapshot[:7] != (self.last_report_snapshot[:7] if self.last_report_snapshot else None)
+        if changed:
+            # 档位变化时打印详细日志
+            old_profile = self.last_report_snapshot[0] if self.last_report_snapshot else "init"
+            if old_profile != self.current_profile:
+                logger.warning(
+                    f"📊 [档位变化] {old_profile} → {self.current_profile} | "
+                    f"分辨率: {profile['width']}x{profile['height']} | "
+                    f"帧率: {profile['fps']}fps | "
+                    f"码率: {profile['bitrate']}kbps | "
+                    f"RTT: {self.device_manager.last_heartbeat_rtt_ms if self.device_manager.last_heartbeat_rtt_ms is not None else '-'}ms | "
+                    f"丢包率: {self.device_manager.packet_loss_estimate}% | "
+                    f"重连次数: {self.reconnect_count} | "
+                    f"流状态: {self.last_stream_state}"
+                )
+            else:
+                logger.info(
+                    f"采集状态 stream={self.last_stream_state} net={self.current_profile} "
+                    f"rtt={self.device_manager.last_heartbeat_rtt_ms if self.device_manager.last_heartbeat_rtt_ms is not None else '-'}ms "
+                    f"loss={self.device_manager.packet_loss_estimate}% "
+                    f"reconnects={self.reconnect_count} "
+                    f"profile={profile['width']}x{profile['height']}@{profile['fps']}fps/{profile['bitrate']}kbps"
+                )
+        self.last_report_snapshot = snapshot
+        self.device_manager.set_network_level(self.current_profile)
+        self.device_manager.report_stream_status({
+            "resolution": f"{profile['width']}x{profile['height']}",
+            "fps": profile["fps"],
+            "bitrate": profile["bitrate"],
+            "network_level": self.current_profile,
+            "reconnect_count": self.reconnect_count,
+            "stream_status": self.last_stream_state,
+        })
+
+    def choose_profile(self) -> str:
+        """根据心跳连续失败/成功次数选择网络档位"""
+        failures = self.device_manager.consecutive_heartbeat_failures
+        successes = self.device_manager.consecutive_heartbeat_successes
+
+        if failures >= 3:
+            return "poor"
+        if failures >= 1:
+            return "weak"
+        if successes >= config.NETWORK_RECOVERY_SUCCESS_COUNT:
+            return "good"
+        return self.current_profile
+
+    async def restart_streamer(self, profile_name: str):
+        """重建推流连接，可同时完成降级或恢复"""
+        self.reconnect_count += 1
+        self.last_stream_state = "reconnecting"
+        self.report_stream_status()
+
+        if self.streamer:
+            await self.streamer.stop()
+            self.streamer = None
+
+        await asyncio.sleep(config.STREAM_RECONNECT_DELAY)
+
+        # 打印重连日志
+        profile = config.NETWORK_PROFILES[profile_name]
+        logger.warning(
+            f"🔄 [重建推流] profile={profile_name} | "
+            f"分辨率: {profile['width']}x{profile['height']} | "
+            f"帧率: {profile['fps']}fps | "
+            f"码率: {profile['bitrate']}kbps | "
+            f"重连次数: {self.reconnect_count}"
+        )
+
+        await self.start_streamer(profile_name)
+
     async def run(self):
         """运行主循环"""
         self.running = True
@@ -88,7 +208,25 @@ class CameraClient:
         try:
             # WHIP推流是异步的，只需要保持连接
             while self.running:
-                await asyncio.sleep(1)
+                target_profile = self.choose_profile()
+
+                if self.streamer and self.streamer.is_unhealthy():
+                    if target_profile == "good":
+                        target_profile = "weak"
+                    await self.restart_streamer(target_profile)
+                    continue
+
+                if target_profile != self.current_profile:
+                    logger.warning(
+                        f"⚠️ [网络档位变化] {self.current_profile} → {target_profile} | "
+                        f"心跳失败: {self.device_manager.consecutive_heartbeat_failures}次 | "
+                        f"心跳成功: {self.device_manager.consecutive_heartbeat_successes}次"
+                    )
+                    await self.restart_streamer(target_profile)
+                    continue
+
+                self.report_stream_status()
+                await asyncio.sleep(config.NETWORK_MONITOR_INTERVAL)
 
         except KeyboardInterrupt:
             logger.info("收到中断信号")
@@ -96,7 +234,7 @@ class CameraClient:
             logger.error(f"运行异常: {e}")
         finally:
             await self.cleanup()
-    
+
     async def cleanup(self):
         """清理资源"""
         logger.info("开始清理资源...")
@@ -136,4 +274,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

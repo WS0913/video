@@ -17,21 +17,81 @@
         <el-icon :size="40"><WarningFilled /></el-icon>
         <p>{{ error }}</p>
       </div>
+
+      <!-- 性能监控面板 -->
+      <div class="stats-panel" v-if="showStats && stats">
+        <div class="stats-header">
+          <span class="stats-title">📊 实时性能监控</span>
+          <el-icon class="close-stats" @click="showStats = false"><Close /></el-icon>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">分辨率</span>
+            <span class="stat-value">{{ stats.resolution || '-' }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">帧率</span>
+            <span class="stat-value">{{ stats.fps }} fps</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">码率</span>
+            <span class="stat-value">{{ stats.bitrate }} kbps</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">丢包率</span>
+            <span class="stat-value" :class="{ 'stat-warning': stats.packetLoss > 5, 'stat-danger': stats.packetLoss > 10 }">
+              {{ stats.packetLoss }}%
+            </span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">RTT</span>
+            <span class="stat-value" :class="{ 'stat-warning': stats.rtt > 100, 'stat-danger': stats.rtt > 200 }">
+              {{ stats.rtt }} ms
+            </span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">抖动</span>
+            <span class="stat-value">{{ stats.jitter }} ms</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">丢包数</span>
+            <span class="stat-value">{{ stats.packetsLost }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">接收包数</span>
+            <span class="stat-value">{{ stats.packetsReceived }}</span>
+          </div>
+          <div class="stat-item full-width">
+            <span class="stat-label">网络档位</span>
+            <span class="stat-value network-level" :class="'level-' + (device.network_level || 'good')">
+              {{ networkLevelText }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 显示统计按钮 -->
+      <div class="stats-toggle" @click="showStats = !showStats" v-if="!loading && !error">
+        <el-icon><DataAnalysis /></el-icon>
+      </div>
     </div>
     <div class="video-footer">
-      <span class="info">{{ device.resolution || '720P' }} | {{ device.fps || 25 }}fps</span>
+      <span class="info">
+        {{ device.resolution || '720P' }} | {{ device.fps || 25 }}fps
+        <template v-if="device.bitrate"> | {{ device.bitrate }}kbps</template>
+      </span>
       <span class="status" :class="device.status">
         <el-icon><VideoCameraFilled /></el-icon>
-        {{ device.status === 'online' ? '在线' : '离线' }}
+        {{ statusText }}
       </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import type { Device } from '@/types'
-import { WebRTCPlayer } from '@eyevinn/webrtc-player'
+import { WHEPClient, type VideoStats } from '@/utils/whepClient'
 import config from '@/config'
 
 interface Props {
@@ -47,7 +107,31 @@ const videoElement = ref<HTMLVideoElement>()
 const videoContainer = ref<HTMLDivElement>()
 const loading = ref(true)
 const error = ref('')
-let player: WebRTCPlayer | null = null
+const connectionState = ref('')
+const showStats = ref(false)
+const stats = ref<VideoStats | null>(null)
+let player: WHEPClient | null = null
+let statsInterval: number | null = null
+let lastBytesReceived = 0
+let lastTimestamp = 0
+
+const statusText = computed(() => {
+  if (props.device.status !== 'online') return '离线'
+  if (props.device.stream_status === 'reconnecting' || connectionState.value === 'disconnected') return '重连中'
+  if (props.device.network_level === 'poor') return '弱网'
+  if (props.device.network_level === 'weak') return '降级'
+  return '在线'
+})
+
+const networkLevelText = computed(() => {
+  const level = props.device.network_level || 'good'
+  const levelMap: Record<string, string> = {
+    good: '良好',
+    weak: '一般',
+    poor: '较差'
+  }
+  return levelMap[level] || level
+})
 
 // 初始化视频流
 const initVideoStream = async () => {
@@ -70,26 +154,29 @@ const initVideoStream = async () => {
 
     console.log('Connecting to WHEP endpoint:', whepUrl)
 
-    // 使用 @eyevinn/webrtc-player 库
-    player = new WebRTCPlayer({
-      video: videoElement.value,
-      type: 'whep',
-    })
-
-    // 监听事件
-    player.on('no-media', () => {
-      console.warn('Media timeout occurred')
-      error.value = '视频流超时'
-    })
-
-    player.on('media-recovered', () => {
-      console.log('Media recovered')
-      error.value = ''
+    player = new WHEPClient(videoElement.value, whepUrl, {
+      onLoading: () => {
+        loading.value = true
+      },
+      onRecovered: () => {
+        loading.value = false
+        error.value = ''
+        // 开始统计
+        startStatsCollection()
+      },
+      onError: (message) => {
+        loading.value = false
+        error.value = message
+        // 停止统计
+        stopStatsCollection()
+      },
+      onStateChange: (state) => {
+        connectionState.value = state
+      },
     })
 
     // 加载流
-    await player.load(new URL(whepUrl))
-    player.unmute()
+    await player.start()
 
     loading.value = false
 
@@ -98,6 +185,44 @@ const initVideoStream = async () => {
     error.value = `视频加载失败: ${err instanceof Error ? err.message : String(err)}`
     loading.value = false
   }
+}
+
+// 开始收集统计信息
+const startStatsCollection = () => {
+  if (statsInterval) return
+
+  lastBytesReceived = 0
+  lastTimestamp = Date.now()
+
+  statsInterval = window.setInterval(async () => {
+    if (!player) return
+
+    const currentStats = await player.getStats()
+    if (currentStats) {
+      // 计算码率（kbps）
+      const now = Date.now()
+      const timeDiff = (now - lastTimestamp) / 1000 // 秒
+      const bytesDiff = currentStats.bytesReceived - lastBytesReceived
+
+      if (timeDiff > 0 && lastBytesReceived > 0) {
+        currentStats.bitrate = Math.round((bytesDiff * 8) / timeDiff / 1000) // kbps
+      }
+
+      lastBytesReceived = currentStats.bytesReceived
+      lastTimestamp = now
+
+      stats.value = currentStats
+    }
+  }, 1000) // 每秒更新一次
+}
+
+// 停止收集统计信息
+const stopStatsCollection = () => {
+  if (statsInterval) {
+    clearInterval(statsInterval)
+    statsInterval = null
+  }
+  stats.value = null
 }
 
 const toggleFullscreen = () => {
@@ -119,9 +244,12 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // 停止统计收集
+  stopStatsCollection()
+
   // 清理WebRTC播放器
   if (player) {
-    player.destroy()
+    player.stop()
     player = null
   }
 })
@@ -221,5 +349,126 @@ onUnmounted(() => {
 .status.offline {
   color: #f56c6c;
 }
-</style>
 
+/* 性能监控面板样式 */
+.stats-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 280px;
+  color: white;
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stats-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.close-stats {
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.close-stats:hover {
+  opacity: 1;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #67c23a;
+}
+
+.stat-value.stat-warning {
+  color: #e6a23c;
+}
+
+.stat-value.stat-danger {
+  color: #f56c6c;
+}
+
+.stat-value.network-level {
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.stat-value.level-good {
+  background: rgba(103, 194, 58, 0.2);
+  color: #67c23a;
+}
+
+.stat-value.level-weak {
+  background: rgba(230, 162, 60, 0.2);
+  color: #e6a23c;
+}
+
+.stat-value.level-poor {
+  background: rgba(245, 108, 108, 0.2);
+  color: #f56c6c;
+}
+
+/* 统计按钮 */
+.stats-toggle {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 20px;
+  transition: all 0.3s;
+  z-index: 10;
+}
+
+.stats-toggle:hover {
+  background: rgba(64, 158, 255, 0.8);
+  transform: scale(1.1);
+}
+</style>

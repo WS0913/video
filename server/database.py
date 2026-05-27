@@ -1,6 +1,7 @@
 """数据库连接和会话管理"""
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
+from sqlalchemy import text
 from config import settings
 from models import Base
 from loguru import logger
@@ -42,6 +43,7 @@ async def init_database():
         # 创建所有表
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            await ensure_device_columns(conn)
         
         logger.info("数据库表创建完成")
         
@@ -53,6 +55,27 @@ async def init_database():
     except Exception as e:
         logger.error(f"数据库初始化失败: {e}")
         raise
+
+
+async def ensure_device_columns(conn):
+    """为已存在的 SQLite 设备表补充新增字段。"""
+    if not settings.DATABASE_URL.startswith("sqlite"):
+        return
+
+    result = await conn.execute(text("PRAGMA table_info(devices)"))
+    existing_columns = {row[1] for row in result.fetchall()}
+    columns = {
+        "network_level": "VARCHAR(20) DEFAULT 'unknown'",
+        "network_rtt_ms": "FLOAT",
+        "packet_loss": "FLOAT",
+        "reconnect_count": "INTEGER DEFAULT 0",
+        "stream_status": "VARCHAR(20) DEFAULT 'inactive'",
+    }
+
+    for name, definition in columns.items():
+        if name not in existing_columns:
+            await conn.execute(text(f"ALTER TABLE devices ADD COLUMN {name} {definition}"))
+            logger.info(f"设备表新增字段: {name}")
 
 
 async def create_default_admin():
@@ -90,4 +113,3 @@ async def close_database():
         logger.info("数据库连接已关闭")
     except Exception as e:
         logger.error(f"关闭数据库连接失败: {e}")
-

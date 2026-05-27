@@ -50,6 +50,23 @@
             {{ row.fps ? `${row.fps}fps` : '-' }}
           </template>
         </el-table-column>
+        <el-table-column prop="bitrate" label="码率" width="90">
+          <template #default="{ row }">
+            {{ row.bitrate ? `${row.bitrate}kbps` : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="network_level" label="网络" width="90">
+          <template #default="{ row }">
+            <el-tag :type="networkTagType(row.network_level)">
+              {{ formatNetworkLevel(row.network_level) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="stream_status" label="视频流" width="100">
+          <template #default="{ row }">
+            {{ formatStreamStatus(row.stream_status) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="last_heartbeat" label="最后心跳" width="160">
           <template #default="{ row }">
             {{ row.last_heartbeat ? formatTime(row.last_heartbeat) : '-' }}
@@ -86,6 +103,35 @@ const filterType = ref('')
 
 const formatTime = (time: string) => {
   return new Date(time).toLocaleString('zh-CN')
+}
+
+const formatNetworkLevel = (level?: string) => {
+  const map: Record<string, string> = {
+    good: '良好',
+    weak: '降级',
+    poor: '弱网',
+    unknown: '未知',
+  }
+  return map[level || 'unknown'] || '未知'
+}
+
+const networkTagType = (level?: string) => {
+  if (level === 'good') return 'success'
+  if (level === 'weak') return 'warning'
+  if (level === 'poor') return 'danger'
+  return 'info'
+}
+
+const formatStreamStatus = (status?: string) => {
+  const map: Record<string, string> = {
+    active: '传输中',
+    inactive: '未传输',
+    reconnecting: '重连中',
+    registering: '注册中',
+    starting: '启动中',
+    error: '异常',
+  }
+  return map[status || 'inactive'] || status || '-'
 }
 
 const handleFilter = () => {
@@ -148,4 +194,3 @@ onMounted(() => {
   width: 150px;
 }
 </style>
-

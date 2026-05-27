@@ -1,5 +1,5 @@
 """设备管理API"""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from pydantic import BaseModel
@@ -12,6 +12,15 @@ from models import Device, Stream
 from config import settings
 
 router = APIRouter()
+_last_stream_snapshots = {}
+
+
+def verify_device_token(x_device_token: str = Header(...)):
+    """验证设备API令牌"""
+    if x_device_token != settings.DEVICE_API_TOKEN:
+        logger.warning(f"设备API令牌验证失败: {x_device_token}")
+        raise HTTPException(status_code=401, detail="设备API令牌无效")
+    return x_device_token
 
 
 # Pydantic模型
@@ -20,6 +29,9 @@ class DeviceRegister(BaseModel):
     device_type: str
     location: Optional[str] = None
     ip_address: Optional[str] = None
+    resolution: Optional[str] = None
+    fps: Optional[int] = None
+    bitrate: Optional[int] = None
 
 
 class DeviceResponse(BaseModel):
@@ -33,23 +45,43 @@ class DeviceResponse(BaseModel):
     resolution: Optional[str]
     fps: Optional[int]
     bitrate: Optional[int]
+    network_level: Optional[str]
+    network_rtt_ms: Optional[float]
+    packet_loss: Optional[float]
+    reconnect_count: Optional[int]
+    stream_status: Optional[str]
     last_heartbeat: Optional[datetime]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class HeartbeatRequest(BaseModel):
     timestamp: float
+    network_level: Optional[str] = None
+    network_rtt_ms: Optional[float] = None
+    packet_loss: Optional[float] = None
+
+
+class StreamStatusUpdate(BaseModel):
+    resolution: Optional[str] = None
+    fps: Optional[int] = None
+    bitrate: Optional[int] = None
+    network_level: Optional[str] = None
+    network_rtt_ms: Optional[float] = None
+    packet_loss: Optional[float] = None
+    reconnect_count: Optional[int] = None
+    stream_status: Optional[str] = None
 
 
 @router.post("/register", response_model=dict)
 async def register_device(
     device_data: DeviceRegister,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(verify_device_token)
 ):
-    """注册设备（基于IP地址去重）"""
+    """注册设备（基于IP地址去重，需要设备API令牌认证）"""
     try:
         # 先查找是否已存在相同IP的设备
         result = await db.execute(
@@ -63,6 +95,11 @@ async def register_device(
             device.device_type = device_data.device_type
             device.location = device_data.location
             device.status = "online"
+            device.resolution = device_data.resolution or device.resolution
+            device.fps = device_data.fps or device.fps
+            device.bitrate = device_data.bitrate or device.bitrate
+            device.network_level = "good"
+            device.stream_status = "registering"
             device.last_heartbeat = datetime.utcnow()
 
             # 确保有stream_url
@@ -78,6 +115,11 @@ async def register_device(
                 location=device_data.location,
                 ip_address=device_data.ip_address,
                 status="online",
+                resolution=device_data.resolution,
+                fps=device_data.fps,
+                bitrate=device_data.bitrate,
+                network_level="good",
+                stream_status="registering",
                 last_heartbeat=datetime.utcnow()
             )
 
@@ -106,34 +148,119 @@ async def register_device(
 async def device_heartbeat(
     device_id: str,
     heartbeat: HeartbeatRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(verify_device_token)
 ):
-    """设备心跳"""
+    """设备心跳（需要设备API令牌认证）"""
     try:
-        # 更新设备心跳时间和状态
-        stmt = (
-            update(Device)
-            .where(Device.device_id == device_id)
-            .values(
-                last_heartbeat=datetime.utcnow(),
-                status="online"
-            )
-        )
-        
+        # 更新设备心跳时间、在线状态和可选网络指标
+        values = {
+            "last_heartbeat": datetime.utcnow(),
+            "status": "online",
+        }
+        if heartbeat.network_level is not None:
+            values["network_level"] = heartbeat.network_level
+        if heartbeat.network_rtt_ms is not None:
+            values["network_rtt_ms"] = heartbeat.network_rtt_ms
+        if heartbeat.packet_loss is not None:
+            values["packet_loss"] = heartbeat.packet_loss
+
+        stmt = update(Device).where(Device.device_id == device_id).values(**values)
+
         result = await db.execute(stmt)
         await db.commit()
-        
+
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="设备不存在")
-        
-        logger.debug(f"设备心跳: {device_id}")
-        
+
+        # 心跳日志改为info级别，便于观察设备在线情况
+        logger.info(f"设备心跳 device={device_id} net={heartbeat.network_level or 'good'}")
+
         return {"message": "心跳成功"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"设备心跳失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{device_id}/stream-status")
+async def update_stream_status(
+    device_id: str,
+    status_data: StreamStatusUpdate,
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(verify_device_token)
+):
+    """上报视频参数和网络质量状态（需要设备API令牌认证）"""
+    try:
+        values = {"updated_at": datetime.utcnow()}
+        for field in (
+            "resolution",
+            "fps",
+            "bitrate",
+            "network_level",
+            "network_rtt_ms",
+            "packet_loss",
+            "reconnect_count",
+            "stream_status",
+        ):
+            value = getattr(status_data, field)
+            if value is not None:
+                values[field] = value
+
+        snapshot = {
+            "resolution": values.get("resolution"),
+            "fps": values.get("fps"),
+            "bitrate": values.get("bitrate"),
+            "network_level": values.get("network_level"),
+            "network_rtt_ms": values.get("network_rtt_ms"),
+            "packet_loss": values.get("packet_loss"),
+            "reconnect_count": values.get("reconnect_count"),
+            "stream_status": values.get("stream_status"),
+        }
+
+        stmt = update(Device).where(Device.device_id == device_id).values(**values)
+        result = await db.execute(stmt)
+        await db.commit()
+
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="设备不存在")
+
+        previous = _last_stream_snapshots.get(device_id, {})
+        important_changed = any(
+            snapshot.get(key) != previous.get(key)
+            for key in ("resolution", "fps", "bitrate", "network_level", "reconnect_count", "stream_status")
+        )
+        _last_stream_snapshots[device_id] = {**previous, **snapshot}
+
+        if important_changed:
+            message = (
+                f"视频状态 device={device_id} "
+                f"stream={snapshot.get('stream_status') or previous.get('stream_status') or '-'} "
+                f"net={snapshot.get('network_level') or previous.get('network_level') or '-'} "
+                f"rtt={snapshot.get('network_rtt_ms') if snapshot.get('network_rtt_ms') is not None else '-'}ms "
+                f"loss={snapshot.get('packet_loss') if snapshot.get('packet_loss') is not None else '-'} "
+                f"reconnects={snapshot.get('reconnect_count') if snapshot.get('reconnect_count') is not None else 0} "
+                f"profile={snapshot.get('resolution') or previous.get('resolution') or '-'}@"
+                f"{snapshot.get('fps') or previous.get('fps') or '-'}fps/"
+                f"{snapshot.get('bitrate') or previous.get('bitrate') or '-'}kbps"
+            )
+            if snapshot.get("network_level") == "poor" or snapshot.get("stream_status") == "reconnecting":
+                logger.warning(message)
+            else:
+                logger.info(message)
+        else:
+            # 改为info级别，保留周期性状态上报日志
+            logger.info(f"视频状态上报 device={device_id} net={snapshot.get('network_level')} stream={snapshot.get('stream_status')}")
+
+        return {"message": "视频状态更新成功"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"视频状态更新失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -209,17 +336,17 @@ async def device_offline(
             .where(Device.device_id == device_id)
             .values(status="offline")
         )
-        
+
         result = await db.execute(stmt)
         await db.commit()
-        
+
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="设备不存在")
-        
+
         logger.info(f"设备手动下线: {device_id}")
-        
+
         return {"message": "下线成功"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -238,21 +365,20 @@ async def delete_device(
             select(Device).where(Device.device_id == device_id)
         )
         device = result.scalar_one_or_none()
-        
+
         if device is None:
             raise HTTPException(status_code=404, detail="设备不存在")
-        
+
         await db.delete(device)
         await db.commit()
-        
+
         logger.info(f"设备已删除: {device_id}")
-        
+
         return {"message": "设备删除成功"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"删除设备失败: {e}")
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-

@@ -14,6 +14,11 @@ export interface Device {
   resolution?: string
   fps?: number
   bitrate?: number
+  network_level?: 'good' | 'weak' | 'poor' | 'unknown'
+  network_rtt_ms?: number
+  packet_loss?: number
+  reconnect_count?: number
+  stream_status?: 'active' | 'inactive' | 'reconnecting' | 'error' | string
   last_heartbeat?: string
   created_at: string
 }
@@ -78,4 +83,3 @@ export interface ApiResponse<T = any> {
   message?: string
   data?: T
 }
-
