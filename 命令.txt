@@ -1,7 +1,7 @@
 
 windows
 
-ipconfig 查看局域网ip
+ipconfig 
 
 ./mediamtx.exe
 
@@ -18,6 +18,30 @@ pnpm dev
 
 
 linux
+
+修改配置
+cd Desktop/video/camera-client
+nano .env  
+SERVER_URL和RTSP_SERVER
+
+
+启动mediamtx
+ssh yuxiang@172.20.10.2
+cd ~/mediamtx
+./mediamtx
+
+192.168.216.129
+启动采集端
+ssh yuxiang@172.20.10.2
+cd Desktop/video/camera-client
+source venv/bin/activate
+python main.py
+
+
+fuwuqi
+172.20.10.3
+172.20.10.2
+
 修改linux密码
 sudo passwd user 
 
@@ -35,20 +59,3 @@ libcamera-hello --list-cameras
 rpicam-hello 
 libcamera-still -o test.jpg --width 640 --height 480
 libcamera-hello --width 640 --height 480 --framerate 15
-
-修改配置
-cd Desktop/video/camera-client
-nano .env  SERVER_URL和RTSP_SERVER改成服务端ip
-
-
-启动mediamtx
-ssh yuxiang@192.168.1.9  > 123456
-cd ~/mediamtx
-./mediamtx
-
-
-启动采集端
-ssh yuxiang@192.168.1.9  > 123456
-cd Desktop/video/camera-client
-source venv/bin/activate
-python main.py
