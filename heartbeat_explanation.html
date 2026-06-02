@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摄像头心跳机制讲解</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 30px;
+            background: linear-gradient(180deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+        
+        .flowchart {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .flow-step {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            margin: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .flow-arrow {
+            display: inline-block;
+            color: #667eea;
+            font-size: 2rem;
+            margin: 0 10px;
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .code-block pre {
+            color: #ccc;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .code-block .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+        
+        .code-block .copy-btn:hover {
+            background: #5a6fd6;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        .icon {
+            font-size: 1.8rem;
+        }
+        
+        .concept-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .concept-item {
+            flex: 1;
+            min-width: 250px;
+            background: linear-gradient(135deg, #e8f5e9, #f3e5f5);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .concept-item:hover {
+            transform: translateY(-5px);
+        }
+        
+        .concept-item h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .concept-item p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .status-online {
+            background: linear-gradient(135deg, #81c784, #66bb6a) !important;
+        }
+        
+        .status-offline {
+            background: linear-gradient(135deg, #ef9a9a, #e57373) !important;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+            margin: 20px 0;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -33px;
+            top: 5px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+        }
+        
+        .timeline-item h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .timeline-item p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .comparison-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .tip-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .tip-box p {
+            color: #1565c0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 摄像头心跳机制详解</h1>
+        
+        <!-- 什么是心跳 -->
+        <div class="card">
+            <h2 class="card-title">💡 什么是心跳机制？</h2>
+            <p style="color: #666; line-height: 1.8;">
+                心跳机制就像设备和服务器之间的<strong class="highlight">"定期打卡"</strong>。摄像头每隔一段时间就向服务器发送一个信号，告诉服务器：
+                <strong>"我还活着！"</strong>。如果服务器长时间收不到这个信号，就会认为设备离线了。
+            </p>
+            
+            <div class="concept-box">
+                <div class="concept-item">
+                    <div class="icon">📡</div>
+                    <h4>客户端主动上报</h4>
+                    <p>摄像头主动发送心跳请求</p>
+                </div>
+                <div class="concept-item">
+                    <div class="icon">🖥️</div>
+                    <h4>服务端被动接收</h4>
+                    <p>服务器记录心跳时间</p>
+                </div>
+                <div class="concept-item">
+                    <div class="icon">⏰</div>
+                    <h4>定时检测超时</h4>
+                    <p>服务端检查设备是否在线</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 工作流程 -->
+        <div class="card">
+            <h2 class="card-title">🔄 心跳工作流程</h2>
+            
+            <div class="flowchart">
+                <div class="flow-step">1️⃣ 设备注册</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">2️⃣ 获取设备ID</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">3️⃣ 启动心跳线程</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">4️⃣ 定时发送心跳</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">5️⃣ 服务端更新状态</div>
+            </div>
+            
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h4>第一步：设备注册</h4>
+                    <p>摄像头启动后，首先向服务器注册自己，获取唯一的设备ID</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>第二步：启动心跳线程</h4>
+                    <p>注册成功后，开启一个独立的"心跳线程"，专门负责发送心跳</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>第三步：定时发送心跳</h4>
+                    <p>每隔10秒，心跳线程向服务器发送一次心跳请求</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>第四步：服务端更新状态</h4>
+                    <p>服务器收到心跳后，更新设备的"最后心跳时间"，标记设备为在线</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 客户端关键代码 -->
+        <div class="card">
+            <h2 class="card-title">📱 客户端代码实现</h2>
+            
+            <h3 style="color: #555; margin: 20px 0 10px;">1. 心跳线程启动</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>def start_heartbeat(self, interval=10):
+    # 检查设备是否已注册
+    if self.device_id is None:
+        print("设备未注册，无法启动心跳")
+        return
+    
+    self.running = True
+    # 创建守护线程，专门处理心跳
+    self.heartbeat_thread = threading.Thread(
+        target=self._heartbeat_loop,
+        args=(interval,),
+        daemon=True  # 主线程退出时自动结束
+    )
+    self.heartbeat_thread.start()
+    print(f"❤️ 心跳已启动，间隔: {interval}秒")</pre>
+            </div>
+            
+            <h3 style="color: #555; margin: 20px 0 10px;">2. 心跳循环核心</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>def _heartbeat_loop(self, interval):
+    while self.running:
+        try:
+            # 向服务器发送心跳请求
+            response = requests.post(
+                f'{self.server_url}/api/devices/{self.device_id}/heartbeat',
+                json={'timestamp': time.time()},
+                timeout=5  # 5秒超时，防止卡死
+            )
+            
+            if response.status_code == 200:
+                print(f"✅ 心跳成功: {self.device_id}")
+            else:
+                print(f"❌ 心跳失败: {response.status_code}")
+                
+        except Exception as e:
+            print(f"⚠️ 心跳异常: {e}")
+        
+        # 等待指定间隔后再次发送
+        time.sleep(interval)</pre>
+            </div>
+            
+            <div class="tip-box">
+                <p><strong>💡 关键知识点：</strong>使用<strong class="highlight">守护线程</strong>可以确保主程序退出时，心跳线程也会自动结束，不会变成僵尸进程。</p>
+            </div>
+        </div>
+        
+        <!-- 服务端关键代码 -->
+        <div class="card">
+            <h2 class="card-title">🖥️ 服务端代码实现</h2>
+            
+            <h3 style="color: #555; margin: 20px 0 10px;">1. 接收心跳请求</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>@router.post("/{device_id}/heartbeat")
+async def device_heartbeat(device_id: str, db: AsyncSession):
+    # 更新数据库中的心跳时间和状态
+    stmt = update(Device).where(
+        Device.device_id == device_id
+    ).values(
+        last_heartbeat=datetime.utcnow(),  # 记录当前时间
+        status="online"                     # 标记为在线
+    )
+    
+    result = await db.execute(stmt)
+    await db.commit()
+    
+    return {"message": "心跳成功"}</pre>
+            </div>
+            
+            <h3 style="color: #555; margin: 20px 0 10px;">2. 离线检测机制</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
+                <pre>async def check_device_status(self):
+    # 计算超时时间点（当前时间 - 30秒）
+    threshold_time = datetime.utcnow() - timedelta(seconds=30)
+    
+    # 查找所有在线但心跳超时的设备
+    stmt = select(Device).where(
+        Device.status == "online",
+        Device.last_heartbeat < threshold_time
+    )
+    
+    result = await db.execute(stmt)
+    timeout_devices = result.scalars().all()
+    
+    # 将超时设备标记为离线
+    for device in timeout_devices:
+        print(f"⏰ 设备超时离线: {device.device_id}")
+        device.status = "offline"
+    
+    await db.commit()</pre>
+            </div>
+        </div>
+        
+        <!-- 超时策略 -->
+        <div class="card">
+            <h2 class="card-title">⏰ 超时策略设计</h2>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>当前值</th>
+                        <th>设计意图</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>心跳间隔</td>
+                        <td><strong class="highlight">10秒</strong></td>
+                        <td>平衡网络开销和实时性</td>
+                    </tr>
+                    <tr>
+                        <td>超时阈值</td>
+                        <td><strong class="highlight">30秒</strong></td>
+                        <td>允许最多3次心跳丢失</td>
+                    </tr>
+                    <tr>
+                        <td>检测间隔</td>
+                        <td><strong class="highlight">6秒</strong></td>
+                        <td>及时发现离线，性能开销低</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="flowchart">
+                <div class="flow-step status-online">在线</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">等待10秒</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">发送心跳</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">更新时间</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step status-online">保持在线</div>
+            </div>
+            
+            <div class="flowchart">
+                <div class="flow-step status-online">在线</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">30秒无心跳</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step status-offline">标记离线</div>
+            </div>
+        </div>
+        
+        <!-- 总结 -->
+        <div class="card">
+            <h2 class="card-title">🎯 核心要点总结</h2>
+            
+            <div class="concept-box">
+                <div class="concept-item">
+                    <div class="icon">🔒</div>
+                    <h4>线程安全</h4>
+                    <p>使用守护线程确保优雅退出</p>
+                </div>
+                <div class="concept-item">
+                    <div class="icon">⏱️</div>
+                    <h4>超时控制</h4>
+                    <p>5秒请求超时避免阻塞</p>
+                </div>
+                <div class="concept-item">
+                    <div class="icon">🛡️</div>
+                    <h4>异常处理</h4>
+                    <p>捕获异常保证线程稳定</p>
+                </div>
+                <div class="concept-item">
+                    <div class="icon">⚖️</div>
+                    <h4>容错设计</h4>
+                    <p>3倍心跳间隔防止误判</p>
+                </div>
+            </div>
+            
+            <p style="color: #666; text-align: center; margin-top: 20px; font-size: 16px;">
+                心跳机制是设备管理系统的核心功能，通过定期上报确保服务端能实时掌握设备状态。
+                合理的超时策略既能及时发现离线设备，又能容忍网络波动带来的影响。
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function copyCode(btn) {
+            const codeBlock = btn.parentElement;
+            const code = codeBlock.querySelector('pre').textContent;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = '已复制';
+                setTimeout(() => {
+                    btn.textContent = '复制代码';
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+    </script>
+</body>
+</html>

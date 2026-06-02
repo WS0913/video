@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI识别报告－简洁报告</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/iconfont.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="assessment-body"></div>
+
+<script type="text/html" id="assessment-template">
+    <div class="header">
+        <div class="assessment-area identify-result">
+            <div class="label title">
+                <h4>论文题目:</h4>
+                <div>{{title}}</div>
+            </div>
+            <div class="label">
+                <h4>检测结果:</h4>
+                {{ if reportSource == "paperpass" }}
+                <div class="score">
+                    <div>{{ isReduceAIReport ? '降AIGC后的总体疑似度' : 'AIGC总体疑似度' }}（高+中+轻）<span>{{ totalSuspectedTextRatio }}%</span></div>
+                    <div>{{ isReduceAIReport ? '降AIGC后的总体疑似度' : 'AIGC总体疑似度' }}（高+中+轻）<span>{{ AiTotalScore }}%</span>（加权计算）
+                        <span class="icon iconfont icon-tip"></span>
+                        <div class="popover">
+                            加权计算公式：（片段1疑似度 + 片段2疑似度 + ... + 片段n疑似度）/ n <br>片段疑似度范围0.0~1.0，合格片段和不检测片段按照0计算
+                        </div>
+                    </div>
+                </div>
+                {{ else }}
+                <div class="nav nav-tabs flex">
+                    <a href="#text-ratio" class="active">文字</a>
+                    <a href="#fragment-ratio">片段</a>
+                </div>
+                {{ /if }}
+            </div>
+            {{ if reportSource == "paperpass" }}
+            <div class="formula">
+                <div>加权计算公式：</div>
+                <div>（片段1疑似度 + 片段2疑似度 + ... + 片段n疑似度）/ n <br>片段疑似度范围0.0~1.0，合格片段和不检测片段按照0计算</div>
+
+            </div>
+            {{ /if }}
+            <div class="tab-content">
+                <div class="tab-pane" id="text-ratio">
+                    {{ if reportSource == "jzy" }}
+                    <div class="pre"><b>总文字数：{{ totalContentLength }}</b></div>
+                    {{ /if }}
+                    <ul class="suspect-degree-list {{reportSource == 'paperpass' ? 'pp' : 'jzy'}}">
+                        {{ each suspectDegree value }}
+                        <li>
+                            <div class="title">{{ value.degree == 'high' ? '高度疑似AIGC占全文比' : value.degree == 'middle' ? '中度疑似AIGC占全文比' : value.degree == 'low' ? '轻度疑似AIGC占全文比' : '不予检测文字占比' }}</div>
+                            <div class="progress">
+                                <div class="progress-bar {{ value.degree == 'high' ? 'red' : value.degree == 'middle' ? 'orange' : value.degree == 'low' ? 'purple' : 'cyan' }}" style="width: {{ value.textRatio }}%"></div>
+                            </div>
+                            <strong>{{ value.textRatio }}%</strong>
+                        </li>
+                        {{ /each }}
+                    </ul>
+                    {{ if reportSource == "paperpass" }}
+                    <div class="pre"><span>高度+中度：{{ highAndMiddleSuspectedTextRatio }}%</span><span style="margin-left: 45px;">高度+中度+轻度：{{ totalSuspectedTextRatio }}%</span></div>
+                    {{ /if }}
+                </div>
+                {{ if reportSource == "jzy" }}
+                <div class="tab-pane" id="fragment-ratio" style="display: none;">
+                    <div class="pre"><b>总检测片段：{{ totalFragmentCount }}</b></div>
+                    <ul class="suspect-degree-list">
+                        {{ each suspectDegree value }}
+                        {{ if value.degree != 'no' }}
+                        <li>
+                            <div class="title">{{ value.degree == 'high' ? '高度疑似片段占比' : value.degree == 'middle' ? '中度疑似片段占比' : '轻度疑似片段占比' }}</div>
+                            <div class="progress">
+                                <div class="progress-bar {{ value.degree == 'high' ? 'red' : value.degree == 'middle' ? 'orange' : value.degree == 'low' ? 'purple' : 'cyan' }}" style="width: {{ value.fragmentRatio }}%"></div>
+                            </div>
+                            <strong>{{ value.count }} / {{ totalFragmentCount }} ( {{ value.fragmentRatio }}% )</strong>
+                        </li>
+                        {{ /if }}
+                        {{ /each }}
+                    </ul>
+                </div>
+                {{ /if }}
+            </div>
+        </div>
+        <div class="basic-info">
+            <div class="assessment-area">
+                <h4>基本信息</h4>
+                <ul class="papersource-list-group">
+                    <li><span>检测版本</span>{{ version }}</li>
+                    <li><span>论文题目</span>{{ title }}</li>
+                    <li><span>论文作者</span>{{ author }}</li>
+                    <li><span>论文字数</span>{{ contentLength }}</li>
+                    <li><span>提交时间</span>{{ uploadTime }}</li>
+                </ul>
+                <div class="laws-wrap">
+                    <div>AIGC检测可有效识别文本是否部分或全部由AI模型生成，检测结果与论文质量无关、仅表示论文中内容片段存在AI生成可能性的概率。</div>
+                    <div>
+                        {{ if reportSource == 'paperpass' }}
+                        根据《中华人民共和国学位法（草案）》第六章第三十三条之规定，已经获得学位者，在获得该学位过程中如有<strong class="g-font-color red">人工智能代写</strong>等学术不端行为，经学位评定委员会审议决定，可由学位授予单位<strong class="g-font-color red">撤销</strong>学位证书。
+                        {{ else }}
+                        根据《中华人民共和国学位法》第六章 第三十七条之规定，学位申请人、学位获得者在攻读该学位过程中有下列情形之一的，经学位评定委员会决议，学位授予单位不授予学位或者撤销学位：<br>
+                        （一）学位论文或者实践成果被认定为存在代写、剽窃、伪造等学术不端行为；<br>
+                        （二）盗用、冒用他人身份，顶替他人取得的入学资格，或者以其他非法手段取得入学资格、毕业证书；<br>
+                        （三）攻读期间存在依法不应当授予学位的其他严重违法行为。<br>
+                        {{ /if }}
+                    </div>
+                    {{ if reportSource == 'paperpass' }}
+                    <div>AIGC检测系统可以检测哪些类别的文章？<br>
+                        PaperPass自研的AIGC学术文本检测工具是专注于对学术论文/期刊领域的专业检测系统，其检测的文本支持范围为：期刊论文、毕业设计、学位论文、职称评审、文献综述科研成果、会议论文，课程作业。对于其他类型的文本包括但不限于文学小说，诗词歌赋，新闻报告，高中小学作文等类型的文本该检测系统并不保证其检测的准确性和误判率。请勿上传非学术论文/期刊领域的文本。
+                    </div>
+                    {{ /if }}
+                </div>
+            </div>
+            <div class="assessment-area reportNo">
+                <p class="font-bold g-font-color green">检测报告编号：{{ ReportID.toUpperCase() }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="assessment-area fragment-charts">
+        <div class="flex-between">
+            <h4>疑似度分布图</h4>
+            <div class="flex distribution-tabs">
+                <span class="red">≥70%</span>
+                <span class="orange">60%-70%</span>
+                <span class="purple">50%-60%</span>
+                <span class="green">&lt;50%</span>
+            </div>
+        </div>
+        <div id="barChart"></div>
+        <h4>疑似度点状分布图</h4>
+        <div id="scatterChart"></div>
+    </div>
+
+    <div class="paper-footer">
+        {{ if reportSource == 'paperpass' }}
+        <p>检测报告由<a href="https://www.paperpass.com/" target="_black">PaperPass</a>文献相似度检测系统生成</p>
+        <p>Copyright © 2007-{{ year }} PaperPass</p>
+        {{ else }}
+        <p>检测报告由<a href="https://www.jianziyuan.com/" target="_black">鉴字源</a>AIGC检测系统生成</p>
+        <p>Copyright © {{ year }} 鉴字源</p>
+        {{ /if }}
+    </div>
+</script>
+
+<span style="display: none">This__is__the__place__to__load__the__google__statistics__code.__The__offline__version__is__hidden,__but__the__online__version__will__have__it.</span>
+</body>
+
+<script src="js/jquery.min.js"></script>
+<script src="js/templateweb.js"></script>
+<script src="https://static-cdn.paperpass.com/libs/echarts/echarts.min.js"></script>
+<script src="js/util.js"></script>
+<script>
+    var reportType = getParamValue(location.search, "type");
+    if (reportType == 'reduce_ai') {
+        document.write(`<script src="js/detaildata_reduce_ai.js"><\/script><script src="js/texthtmldata_reduce_ai.js"><\/script>`);
+    } else {
+        document.write(`<script src="js/detaildata.js"><\/script><script src="js/texthtmldata_ai.js"><\/script>`);
+    }
+</script>
+<script>
+    const reportSource = typeof report_source == "string" ? report_source : 'paperpass';
+    const checkType = typeof check_type == "string" && check_type;
+    const isOrg = typeof is_org == "boolean" ? is_org : false;
+    const isPPEdu = typeof is_pp_edu == "boolean" ? is_pp_edu : false;
+
+    let version = { free: '免费版', ultimate: isOrg ? '机构版' : '旗舰版', published: '职称版', safeguard: '维权版' }
+    version = isPPEdu ? '校园版' : version[checkType];
+
+    let { contentLength: totalContentLength, totalFragmentCount, highFragmentCount, middleFragmentCount, lowFragmentCount, score: AiTotalScore,
+        highSuspectedFragmentRatio, middleSuspectedFragmentRatio, lowSuspectedFragmentRatio, highAndMiddleSuspectedFragmentRatio, totalSuspectedFragmentRatio,
+        highSuspectedTextRatio, middleSuspectedTextRatio, lowSuspectedTextRatio, highAndMiddleSuspectedTextRatio, totalSuspectedTextRatio, noAISuspectedTextRatio,
+        aiCheckSentenceList } = { ...detailJsonData };
+
+    let templateData = {
+        ReportID, checkType, isOrg, title, author, contentLength, uploadTime,
+        AiTotalScore,
+        reportSource,
+        totalContentLength,
+        totalFragmentCount,
+        totalSuspectedFragmentRatio,
+        totalSuspectedTextRatio,
+        highSuspectedTextRatio,
+        highAndMiddleSuspectedFragmentRatio,
+        highAndMiddleSuspectedTextRatio,
+        noAISuspectedTextRatio,
+        isReduceAIReport: reportType == 'reduce_ai',
+        suspectDegree: [
+            { degree: 'high', count: highFragmentCount, fragmentRatio: highSuspectedFragmentRatio, textRatio: highSuspectedTextRatio },
+            { degree: 'middle', count: middleFragmentCount, fragmentRatio: middleSuspectedFragmentRatio, textRatio: middleSuspectedTextRatio },
+            { degree: 'low', count: lowFragmentCount, fragmentRatio: lowSuspectedFragmentRatio, textRatio: lowSuspectedTextRatio },
+            { degree: 'no', count: 0, fragmentRatio: 0, textRatio: noAISuspectedTextRatio },
+        ],
+        version: reportSource == 'jzy' ? (checkType.includes('org') ? '机构版(支持中文和英文)' : '个人版(支持中文和英文)') : (checkType == 'free' ? `${version}(仅检测中文)` : `${version}(支持中文和英文)`),
+        year: uploadTime.split('-')[0],
+    }
+    let templateHtml = template('assessment-template', templateData);
+    $(".assessment-body").html(templateHtml);
+
+    if (reportSource == 'paperpass' && !isOrg && ['free', 'ultimate'].includes(checkType)) {
+        AddXiaoMoAdImg('-com');
+    }
+
+    $(".nav-tabs a").click(function (e) {
+        e.preventDefault();
+        $(this).addClass("active").siblings().removeClass("active");
+        let id = $(this).attr("href");
+        $(id).show().siblings().hide();
+    });
+
+    function groupBy(data) {
+        let result = {};
+        for (let item of data) {
+            let key = item.fragmentCount;
+            if (!result[key]) {
+                result[key] = [];
+            }
+            result[key].push(item);
+        }
+        return result;
+    }
+
+
+    // charts
+    let barChart = echarts.init(document.getElementById("barChart"));
+    let scatterChart = echarts.init(document.getElementById("scatterChart"));
+    let totalCheckFragment = aiCheckSentenceList.filter(item => item.score != -1);
+    let groupByFragment = groupBy(totalCheckFragment);
+    let chartsData = [];
+    for (let item in groupByFragment) {
+        chartsData.push((groupByFragment[item][0].score));
+    }
+    randerChartsMap({ barChart,  scatterChart, chartsData, isAi: true });
+
+    window.addEventListener("message", ({ data }) => {
+        if (data.theme) {
+            randerChartsMap({ barChart,  scatterChart, chartsData, isAi: true });
+        }
+    })
+
+    $(window).resize(function () {
+        barChart.resize();
+        scatterChart.resize();
+    });
+</script>
+</html>

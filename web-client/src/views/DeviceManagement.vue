@@ -44,7 +44,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="resolution" label="分辨率" width="100" />
+        <!-- <el-table-column prop="resolution" label="分辨率" width="100" />
         <el-table-column prop="fps" label="帧率" width="80">
           <template #default="{ row }">
             {{ row.fps ? `${row.fps}fps` : '-' }}
@@ -67,6 +67,7 @@
             {{ formatStreamStatus(row.stream_status) }}
           </template>
         </el-table-column>
+        </el-table-column> -->
         <el-table-column prop="last_heartbeat" label="最后心跳" width="160">
           <template #default="{ row }">
             {{ row.last_heartbeat ? formatTime(row.last_heartbeat) : '-' }}

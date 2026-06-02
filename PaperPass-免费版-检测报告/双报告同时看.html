@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双报告同时看（查重+AIGC检测）</title>
+    <link rel="shortcut icon" href="data:image/vnd.microsoft.icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDr1yKg69c3oOvXN6Dr1zeg69c3oOvXN6Dr1zeg69c3oOvXN6Dr1zeg69c3oOvXN6Dr1zeg69c3oOvXN6Dr1yKg69c/IOvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/IOvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/4ezY/6XFif+Dr1z/g69c/4OvXP+Dr1z/g69c/73UqP/K3br/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/+/16v+qyJD/g69c/4OvXP+Dr1z/g69c/4OvXP/F2bP/1ePI/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP/v9er/qsiQ/4OvXP+Dr1z/g69c/4OvXP+Dr1z/xdmz/9XjyP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/7/Xq/6rIkP+Dr1z/g69c/4OvXP+Dr1z/g69c/8XZs//V48j/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/+/16v/0+PH/7/Xq/+706f/e6tT/ocKE/4OvXP/F2bP/+fv4/+/16v/v9er/5+/g/7zTp/+Dr1z/g69c/4OvXP/v9er/zd6+/7bPn/+30KH/2ubO//j79/+NtWn/xdmz/+bu3v+2z5//ts+f/8XZtP/7/Pr/scyZ/4OvXP+Dr1z/7/Xq/6rIkP+Dr1z/g69c/4SvXf/z9+//rsqV/8XZs//V48j/g69c/4OvXP+Dr1z/yt26/9jmzP+Dr1z/g69c/+/16v+qyJD/g69c/4OvXP+Dr1z/7fPo/7POnP/F2bP/1ePI/4OvXP+Dr1z/g69c/8PYsf/d6dP/g69c/4OvXP/v9er/utKm/5u+fP+cvn3/u9Om//7+/v+ZvXn/xdmz/93o0v+bvnz/m758/6bFiv/y9u7/w9iw/4OvXP+Dr1z/7/Xq//////////////////r8+f+91Kn/g69c/8XZs//////////////////+/v7/3ejS/4qzZf+Dr1z/g69c/421av+Ptmz/j7Zs/462av+FsF//g69c/4OvXP+Js2T/j7Zs/4+2bP+Ptmz/iLJj/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1yog69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1z/g69c/4OvXP+Dr1yoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==">
+    <link rel="stylesheet" href="htmls/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="htmls/css/iconfont.css">
+    <link rel="stylesheet" href="htmls/css/iframe.css"/>
+    <link rel="stylesheet" href="htmls/css/style.css"/>
+    <!--This__is__the__place__to__load__the__zhuge__tracker__code.__The__offline__version__is__hidden,__but__the__online__version__will__have__it.-->
+</head>
+<body class="">
+    <div class="nav" id="m-nav">
+        <div class="m-nav-left">
+            <a href="https://www.paperpass.com/" target="_blank" class="header_logo"></a>
+            <div class="version"></div>
+
+            <label for="linkage" class="checkbox">
+                <input type="checkbox" id="linkage">联动
+            </label>
+        </div>
+        
+        <div class="m-nav-right">
+            <div class="nav-detail-similar">
+                <div class="title">查重总体相似度：</div>
+                <div class="progress">
+                    <span class="progress-bar"></span>
+                </div>
+                <div class="percentage"></div>
+            </div>
+            <div class="nav-suspect-fragment" style="display: flex;">
+                <div>AIGC总体疑似度：</div>
+                <div class="progress">
+                    <span class="progress-bar"></span>
+                </div>
+                <div class="percentage"></div>
+            </div>
+            <div class="download-format">
+                <div class="g-btn g-btn-default g-btn-sm"><span class="icon iconfont icon-download3"></span><span>下载</span></div>
+                <div class="dropdown-menu">
+                    <ul>
+                        <li><a href="/report/download/zip/{{pid}}" target="_blank" data-type="zip"><span class="icon iconfont icon-html"></span><span>离线网页版报告</span></a></li>
+                        <li><a href="/report/download/original/{{pid}}" target="_blank" data-type="原word"><span class="icon iconfont icon-original"></span><span>原文件</span></a></li>
+                        <li><a href="/report/download/simple-pdf/{{pid}}" target="_blank" data-type="check.simple.pdf"><span class="icon iconfont icon-PDF"></span><span>查重报告-PDF打印版（简洁）</span></a></li>
+                        <li><a href="/report/download/pdf/{{pid}}" target="_blank" data-type="check.pdf"><span class="icon iconfont icon-PDF"></span><span>查重报告-PDF打印版</span></a></li>
+                        <li><a href="/report/download/docx/{{pid}}" target="_blank" data-type="check.标红word"><span class="icon iconfont icon-word"></span><span>查重报告-Word标红版</span></a></li>
+                        <li class="reduce-word"><a href="/report/download/rewrite/{{pid}}" target="_blank" data-type="降重批注word"><span class="icon iconfont icon-word"></span><span>原Word降重批注版</span></a></li>
+                        <li class="reduce-word"><a href="/report/download/rewrite-level/{{pid}}/high" target="_blank" data-type="深度降重word"><span class="icon iconfont icon-word"></span><span>深度降重后的Word</span></a></li>
+                        <li class="reduce-word"><a href="/report/download/rewrite-level/{{pid}}/middle" target="_blank" data-type="中度降重word"><span class="icon iconfont icon-word"></span><span>中度降重后的Word</span></a></li>
+                        <li class="reduce-word"><a href="/report/download/rewrite-level/{{pid}}/low" target="_blank" data-type="轻度降重word"><span class="icon iconfont icon-word"></span><span>轻度降重后的Word</span></a></li>
+                        <li><a href="/report/download/ai-simple-pdf/{{pid}}" target="_blank" data-type="ai.simple.pdf"><span class="icon iconfont icon-PDF"></span><span>AIGC检测报告-PDF打印版（简洁）</span></a></li>
+                        <li><a href="/report/download/ai-pdf/{{pid}}" target="_blank" data-type="ai.pdf"><span class="icon iconfont icon-PDF"></span><span>AIGC检测报告-PDF打印版</span></a></li>                   
+                        <li><a href="/report/download/ai-word/{{pid}}" target="_blank" data-type="ai.标红word"><span class="icon iconfont icon-word"></span><span>AIGC检测报告-Word标红版</span></a></li>
+                        <li class="reduce-ai-word"><a href="/report/download/rewrite-aigc-mark/{{pid}}" target="_blank" data-type="降AIGC批注word"><span class="icon iconfont icon-word"></span><span>原Word降AIGC批注版</span></a></li>
+                        <li class="reduce-ai-word"><a href="/report/download/rewrite-aigc-word/{{pid}}" target="_blank" data-type="降AIGC后word"><span class="icon iconfont icon-word"></span><span>降AIGC后的Word</span></a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="switch-format">
+                <div class="g-btn g-btn-default g-btn-sm"><span class="icon iconfont icon-switch"></span><span>报告切换</span></div>
+                <div class="dropdown-menu">
+                    <ul>
+                        <li><a data-type="降AIGC前报告"><span class="icon iconfont icon-tiaozhuan"></span><span>降AIGC前的检测报告</span></a></li>
+                        <li class="reduce-ai-report ai"><a data-type="降AIGC后报告"><span class="icon iconfont icon-tiaozhuan"></span><span>降AIGC后的检测报告</span></a></li>
+                        <li><a data-type="降重前报告"><span class="icon iconfont icon-tiaozhuan"></span><span>降重前的查重报告</span></a></li>
+                        <li class="reduce-report"><a data-type="深度降重后报告"><span class="icon iconfont icon-tiaozhuan"></span><span>深度降重后的查重报告</span></a></li>
+                        <li class="reduce-report"><a data-type="中度降重后报告"><span class="icon iconfont icon-tiaozhuan"></span><span>中度降重后的查重报告</span></a></li>
+                        <li class="reduce-report"><a data-type="轻度降重后报告"><span class="icon iconfont icon-tiaozhuan"></span><span>轻度降重后的查重报告</span></a></li>
+                        <li class="check-ai-report selected"><a data-type="双报告"><span class="icon iconfont icon-tiaozhuan"></span><span>双报告同时看（查重+AIGC检测）</span></a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="m-content">
+        <iframe src="htmls/both_detail_report.html" name="main" scrolling="no" frameborder="0" id="childIframe"></iframe>
+    </div>
+
+    <span style="display: none;">This__is__the__place__to__load__the__google__statistics__code.__The__offline__version__is__hidden,__but__the__online__version__will__have__it.</span>
+    <span style="display: none;">This__is__the__place__to__load__the__download__file__code.__The__offline__version__is__hidden,__but__the__online__version__will__have__it.</span>      
+
+    <script src="htmls/js/jquery.min.js"></script>
+    <script src="htmls/js/lib.js"></script>
+    <script src="htmls/js/detaildata.js"></script>
+
+    <script>
+        const is_both_report = true;
+        
+        (function(System,$){
+            'use strict';
+
+            Report.report_id = ReportID + '_both';
+            System.operateState.saveId(Report.report_id);
+        })(Report,jQuery);
+    </script>
+    <script src="htmls/js/top.js"></script>
+</body>
+</html>

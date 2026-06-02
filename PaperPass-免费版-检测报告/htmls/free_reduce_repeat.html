@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperPass 权威论文抄袭检测系统</title>
+    <link rel="stylesheet" href="css/iconfont.css">
+    <link rel="stylesheet" href="css/iframe.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!--This__is__the__place__to__load__the__zhuge__tracker__code.__The__offline__version__is__hidden,__but__the__online__version__will__have__it.-->
+</head>
+<body>
+<div class="reduce-repeat-loading"><div>正在加载降重结果，请稍等...</div></div>
+<script id="reduce-repeat-template" type="text/html">
+    <div class="reduce-repeat">
+        <div class="reduce-repeat-container">
+            {{ if !isReduceResult }}
+            <section class="reduce-repeat-qa">
+                <h4>什么是降重？</h4>
+                <div class="content">使用机器大模型深度学习技术，通过对上下文语境的深度理解，在不影响语义的条件下，自动改写重复率高的语句。</div>
+                <a href="{{ reducePayUrl }}" target="_blank" class="btn btn-experience">点此购买完整版降重</a>
+            </section>
+            {{ /if }}
+            <section>
+                <div class="reduce-similarity-wrapper">
+                    <div class="before {{ rewriteDegree == null ? 'selected' : '' }}">
+                        <b>降重前的总体相似度：</b>
+                        <div class="g-font-color percentage green">{{ score }}%</div>
+                        <span class="text">({{ version }})</span>
+                        <a data-type="降重前报告" class="reduce-report"><span class="icon iconfont icon-tiaozhuan"></span><span>降重前的查重报告</span></a>
+                        <a href="/report/download/rewrite/{{ pid }}/" target="_blank" data-type="降重批注word" class="col reduce-word"><span class="icon iconfont icon-download2"></span><span>下载原Word降重批注版（包含深度、中度、轻度）</span></a>
+                    </div>
+
+                    <div class="reduce">
+                        <div class="{{ rewriteDegree == 'high' ? 'selected' : '' }}">
+                            <b>深度降重后的相似度：</b>
+                            {{ if isReduceResult }}
+                            <span class="g-font-color percentage green">{{ reduceScoreHigh }}%</span><span class="text">({{ version }})</span>
+                            {{ else }}
+                            <button class="btn btn-get-similarity">查看相似度</button>
+                            {{ /if}}
+                            <a data-type="深度降重后报告" class="reduce-report"><span class="icon iconfont icon-tiaozhuan"></span><span>深度降重后的查重报告</span></a>
+                            <a href="/report/download/rewrite-level/{{ pid }}/high" target="_blank" data-type="深度降重word" class="reduce-word"><span class="icon iconfont icon-download2"></span><span>下载深度降重后的Word</span></a>
+                        </div>
+                        <div class="{{ rewriteDegree == 'middle' ? 'selected' : '' }}">
+                            <b>中度降重后的相似度：</b>
+                            {{ if isReduceResult }}
+                            <span class="g-font-color percentage green">{{ reduceScoreMiddle }}%</span><span class="text">({{version }})</span>
+                            {{ else }}
+                            <button class="btn btn-get-similarity">查看相似度</button>
+                            {{ /if}}
+                            <a data-type="中度降重后报告" class="reduce-report"><span class="icon iconfont icon-tiaozhuan"></span><span>中度降重后的查重报告</span></a>
+                            <a href="/report/download/rewrite-level/{{ pid }}/middle" target="_blank" data-type="中度降重word" class="reduce-word"><span class="icon iconfont icon-download2"></span><span>下载中度降重后的Word</span></a>
+                        </div>
+                        <div class="{{ rewriteDegree == 'low' ? 'selected' : '' }}">
+                            <b>轻度降重后的相似度：</b>
+                            {{ if isReduceResult }}
+                            <span class="g-font-color percentage green">{{ reduceScoreLow }}%</span><span class="text">({{ version }})</span>
+                            {{ else }}
+                            <button class="btn btn-get-similarity">查看相似度</button>
+                            {{ /if}}
+                            <a data-type="轻度降重后报告" class="reduce-report"><span class="icon iconfont icon-tiaozhuan"></span><span>轻度降重后的查重报告</span></a>
+                            <a href="/report/download/rewrite-level/{{ pid }}/low" target="_blank" data-type="轻度降重word" class="reduce-word"><span class="icon iconfont icon-download2"></span><span>下载轻度降重后的Word</span></a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section>
+                <div class="tab-header {{isReduceResult ? 'reduce': 'check'}}">
+                    <ul class="tab-pills">
+                        <li class="active">降重句子汇总</li>
+                        <li>查看全篇内容</li>
+                    </ul>
+                    {{ if isReduceResult }}
+                    <div class="checked-list">
+                        <div class="item">
+                            <input type="radio" name="degree" id="1" value="深度" checked>
+                            <label for="1">深度</label>
+                        </div>
+                        <div class="item">
+                            <input type="radio" name="degree" id="2" value="中度">
+                            <label for="2">中度</label>
+                        </div>
+                        <div class="item">
+                            <input type="radio" name="degree" id="3" value="轻度">
+                            <label for="3">轻度</label>
+                        </div>
+                        <div class="item diff">
+                            <input type="checkbox" name="degree" id="diff">
+                            <label for="diff">显示降重前后对比</label>
+                        </div>
+                        <div class="item concise">
+                            <input type="checkbox" name="degree" id="concise" checked>
+                            <label for="concise">显示相似度角标</label>
+                        </div>
+                    </div>
+                    {{ else }}
+                    <div class="checked-list column">
+                        <div class="item">
+                            <input type="checkbox" name="degree" id="diff" checked>
+                            <label for="diff">显示降重前后对比</label>
+                        </div>
+                        <div>注：<span class="g-font-color red">红色</span>代表删除，<span class="g-font-color green">绿色</span>代表替换</div>
+                    </div>
+                    {{ /if }}
+                </div>
+                <div class="tab-content">
+                    {{ if isReduceResult }}
+                    <div class="checked-desc-tip">
+                        <div class="diff none"><span class="g-font-color red">红色</span>代表删除，<span class="g-font-color green">绿色</span>代表替换</div>
+                        <div class="concise" class="reduce desc">降重后相似度请查看降重后内容中的上角标，如果没有角标代表没有相似度</div>
+                    </div>
+                    {{ /if }}
+                    <div class="reduce-repeat-table">
+                        {{ if freeReduceListInfo.length > 0 }}
+                        {{ each freeReduceListInfo list index }}
+                        <div class="reduce-repeat-row" data-reduceNum="{{ list.reduceNum }}">
+                            <div class="sentence-number"><div>{{ index + 1 }}</div></div>
+                            <div class="reduce-repeat-column before">
+                                <div class="similarity">
+                                    <div>原句</div>
+                                    <div class="btn btn-copy">一键复制</div>
+                                </div>
+                                <div class="content" data-content="{{ list.newOriginalContent }}">
+                                    {{ each list.originalContent item key }}
+                                    {{ if item.score < 40 }}
+                                    {{ item.content }}
+                                    {{ else if item.score >= 60 }}
+                                    <span class="subspan red"><span class="score">{{ item.score }}%</span>{{ item.content }}</span>
+                                    {{ else }}
+                                    <span class="subspan orange"><span class="score">{{ item.score }}%</span>{{ item.content }}</span>
+                                    {{ /if }}
+                                    {{ /each }}
+                                </div>
+                            </div>
+                            <div class="reduce-repeat-column after">
+                                <div class="similarity">
+                                    <div>降重后</div>
+                                    <div class="btn btn-copy {{ isReduceResult ? '' : 'none' }}">一键复制</div>
+                                </div>
+                                <div class="reduce-result-tips" style="display: {{ isReduceResult ? 'none' : 'flex' }};">
+                                    <button class="btn btn-get-reduce-result">获取此句的降重结果</button>
+                                </div>
+                                <div class="tab {{ isReduceResult ? '' : 'none' }}">
+                                    <ul class="tab-nav">
+                                        <li class="active">深度降重</li><li>中度降重</li><li>轻度降重</li>
+                                    </ul>
+                                    {{ each list.reduceResult value key }}
+                                    {{ if key == 0 }}
+                                    <div class="tab-content">
+                                        {{ else }}
+                                        <div class="tab-content none">
+                                            {{ /if }}
+                                            <div class="content" data-content="{{ value.reduceContent }}">
+                                                {{ each value.detailResult item eq }}
+                                                {{ if item.reduceScore < 40 }}
+                                                {{ item.reduceContent }}
+                                                {{ else if item.reduceScore >= 60 }}
+                                                <span class="subspan red"><span class="score">{{ item.reduceScore }}%</span>{{ item.reduceContent }}</span>
+                                                {{ else }}
+                                                <span class="subspan orange"><span class="score">{{ item.reduceScore }}%</span>{{ item.reduceContent }}</span>
+                                                {{ /if }}
+                                                {{ /each }}
+                                            </div>
+                                            {{ if isReduceResult }}
+                                            <div class="item-comparison none">
+                                                <div class="comparison-content">
+                                                    {{ each value.differResultDataList diff }}
+                                                    {{ if diff.added }}
+                                                    <span class="add">{{ diff.value.replace(/[\r\n]+/g, '<br/>') }}</span>
+                                                    {{ else if diff.removed }}
+                                                    <span class="remove">{{ diff.value.replace(/[\r\n]+/g, '<br/>') }}</span>
+                                                    {{ else }}
+                                                    {{ diff.value.replace(/[\r\n]+/g, '<br/>') }}
+                                                    {{ /if }}
+                                                    {{ /each }}
+                                                </div>
+                                            </div>
+                                            {{ /if }}
+                                        </div>
+                                        {{ /each }}
+                                    </div>
+                                </div>
+                            </div>
+                            {{ /each }}
+                            {{ else }}
+                            <div class="null">此报告没有降重句子哦～</div>
+                            {{ /if }}
+                        </div>
+                    </div>
+                    <div class="tab tab-content view-whole-content none">
+                        <ul class="tab-nav">
+                            <li class="active">深度降重</li><li>中度降重</li><li>轻度降重</li>
+                        </ul>
+                        <div class="message">
+                            <div>以下内容是<b><span class="degree">深度降重</span></b>修改后的内容，正文中<span class="green">绿色</span>文字表示机器修改过。</div>
+                            <div class="right">
+                                {{ if isReduceResult }}
+                                <ul class="reduce-word">
+                                    <li><div><b>深度降重后的相似度：</b><span class="g-font-color percentage green">{{reduceScoreHigh}}%</span><a href="/report/download/rewrite-level/{{ pid }}/high" target="_blank" data-type="深度降重word"><span class="icon iconfont icon-download2"></span><span>下载深度降重后的Word</span></a></div></li>
+                                    <li class="none"><div><b>中度降重后的相似度：</b><span class="g-font-color percentage green">{{reduceScoreMiddle}}%</span><a href="/report/download/rewrite-level/{{ pid }}/middle" target="_blank" data-type="中度降重word"><span class="icon iconfont icon-download2"></span><span>下载中度降重后的Word</span></a></div></li>
+                                    <li class="none"><div><b>轻度降重后的相似度：</b><span class="g-font-color percentage green">{{reduceScoreLow}}%</span><a href="/report/download/rewrite-level/{{ pid }}/low" target="_blank" data-type="轻度降重word"><span class="icon iconfont icon-download2"></span><span>下载轻度降重后的Word</span></a></div></li>
+                                </ul>
+                                {{ /if }}
+                                <div class="btn btn-copy">复制全篇内容</div>
+                            </div>
+                        </div>
+                        {{ if isReduceResult }}
+                        <div class="tab-content" data-id="fullDataListHigh"><div class="content">{{@ $imports.mergeSectionCount(fullDataListHigh) }}</div></div>
+                        <div class="tab-content none" data-id="fullDataListMiddle"><div class="content">{{@ $imports.mergeSectionCount(fullDataListMiddle) }}</div></div>
+                        <div class="tab-content none" data-id="fullDataListLow"><div class="content">{{@ $imports.mergeSectionCount(fullDataListLow) }}</div></div>
+                        {{ else }}
+                        <div class="check-tip">此报告没有购买降重服务，无法查看降重后的全篇内容，请购买智能降重服务。</div>
+                        {{ /if }}
+                    </div>
+            </section>
+        </div>
+    </div>
+</script>
+
+<span style="display: none;">This__is__the__place__to__load__the__download__file__code.__The__offline__version__is__hidden,__but__the__online__version__will__have__it.</span>
+
+<script src="js/jquery.min.js"></script>
+<script src="js/lib.js"></script>
+<script src="js/templateweb.js"></script>
+<script src="js/diff.js"></script>
+<script src="js/reducerepeatdata.js"></script>
+<script src="js/util.js"></script>
+<script>
+    var rewriteDegree = getParamValue(location.search, "degree");
+    if (rewriteDegree) {
+        document.write(`<script src="js/detaildata_${rewriteDegree}.js"><\/script>`);
+    } else {
+        document.write(`<script src="js/detaildata.js"><\/script>`);
+    }
+</script>
+<script>
+    const checkType = typeof check_type == "string" && check_type;
+    const isOrg = typeof is_org == "boolean" ? is_org : false;
+    const isPPEdu = typeof is_pp_edu == "boolean" ? is_pp_edu : false;
+    const isReduceResult = typeof consume_type != 'undefined' && consume_type == 'reduce'  ? true : false;
+
+    (function(System, $) {
+        if (rewriteDegree) {
+            ReportID = ReportID + `_${rewriteDegree}`;
+        }
+        System.operateState.saveId(ReportID);
+
+        let ReduceTab = System.operateState.getReduceTab(ReportID);
+        let ReduceFullDegree = System.operateState.getReduceFullDegree(ReportID);
+        let ReduceOffset = System.operateState.getReduceOffset(ReportID);
+
+        let ReduceMasterDegree = System.operateState.getReduceMasterDegree(ReportID);
+        let ReduceDiffShow = System.operateState.getReduceDiffShow(ReportID);
+        let ReduceConciseShow = System.operateState.getReduceConciseShow(ReportID);
+
+        let version = { free: '免费版', ultimate: isOrg ? '机构版' : '旗舰版', published: '职称版', safeguard: '维权版' }
+        version = isPPEdu ? '校园版' : version[checkType];
+
+        function parseReduceInfo(reduceInfo) {
+            if (reduceInfo.freeReduceListInfo.length > 0) {
+                reduceInfo.freeReduceListInfo.map((value) => {
+                    let _originalContent = '';
+                    value.originalContent.forEach(item => _originalContent += item.content);
+                    value.newOriginalContent = filterCharacter(_originalContent);
+                    if (value.reduceResult.length > 0) {
+                        value.reduceResult.map((item, i) => {
+                            value.reduceResult[i].reduceContent = '';
+                            value.reduceResult[i].wholeReduceScore = item.wholeReduceScore;
+                            value.reduceResult[i].wholeDropScore = item.wholeDropScore;
+                            value.reduceResult[i].detailResult.map((o) => {
+                                o.reduceContent = filterCharacter(o.reduceContent);
+                                value.reduceResult[i].reduceContent += filterCharacter(o.reduceContent);
+                            })
+                        });
+                    } else {
+                        value.reduceResult = [{ degree: "high", wholeDropScore: 0, wholeReduceScore: 0, detailResult: [{reduceScore: 0, reduceContent: ''}] }, { degree: "middle", wholeDropScore: 0, wholeReduceScore: 0, detailResult: [{reduceScore: 0, reduceContent: ''}]}, { degree: "low", wholeDropScore: 0, wholeReduceScore: 0, detailResult: [{reduceScore: 0, reduceContent: ''}]}];
+                    }
+                });
+            }
+            reduceInfo.rewriteDegree = rewriteDegree;
+            reduceInfo.checkType = checkType;
+            reduceInfo.version = version;
+            reduceInfo.isReduceResult = isReduceResult;
+            reduceInfo.reducePayUrl = reducePayUrl;
+            if (ReportID.endsWith(`_${rewriteDegree}`)) {
+                reduceInfo.pid = ReportID.split('_')[0];
+            } else {
+                reduceInfo.pid = ReportID;
+            }
+            return reduceInfo;
+        }
+        var reduceRepeatResult = template('reduce-repeat-template', parseReduceInfo(reduceInfo));
+
+        setTimeout(() => {
+            $("body").html(reduceRepeatResult);
+            hasReduceWord();
+            if (typeof consume_type != 'undefined' && consume_type == 'check') {
+                queryReduceResult();
+            }
+            rewriteReportSwitchHref();
+            conciseChange(ReduceConciseShow === '' ? true : ReduceConciseShow);
+            if (ReduceOffset != "") { $("body").scrollTop(ReduceOffset) }
+            if (ReduceMasterDegree) {
+                $(".checked-list input[type=radio]#"+ ReduceMasterDegree +"").prop("checked", true);
+                $(".reduce-repeat-column .tab-nav li:nth-child("+ ReduceMasterDegree +")").click();
+            }
+            if (ReduceDiffShow || ( !isReduceResult && ReduceDiffShow === '' )) {
+                $(".checked-list input[type=checkbox]#diff").prop("checked", true);
+                $(".reduce-repeat-column .item-comparison").css("display", "grid");
+                $(".checked-desc-tip .diff").show();
+            } else {
+                $(".checked-list input[type=checkbox]#diff").prop("checked", false);
+                $(".reduce-repeat-column .item-comparison").css("display", "none");
+                $(".checked-desc-tip .diff").hide();
+            }
+            $(".reduce-repeat-container .tab-pills li").each(function() {
+                this.textContent == ReduceTab && this.click();
+            })
+            $(".view-whole-content .tab-nav li").each(function() {
+                this.textContent == ReduceFullDegree && $(this).click();
+            })
+        }, 200);
+
+        $("body").off("scroll").on("scroll", function() {
+            let offsetH = $("body").scrollTop();
+            System.operateState.saveReduceOffset(ReportID, offsetH);
+        })
+
+        $(document).on('click', ".reduce-repeat-container .tab-pills li", function () {
+            let index = $(this).index();
+            $(this).addClass("active").siblings().removeClass("active");
+            $(".reduce-repeat-container section > .tab-content").hide();
+            $(".reduce-repeat-container section > .tab-content:eq("+index+")").show();
+            if (index == 0) {
+                $(".checked-list").show();
+            } else {
+                $(".checked-list").hide();
+            }
+            System.operateState.saveReduceTab(ReportID, this.textContent);
+            zhugeTrack(this, `选项卡-${this.textContent}`);
+        });
+
+        $(document).on('click', '.tab-nav li', function() {
+            $(this).addClass("active").siblings().removeClass("active");
+            $(this).parents(".tab").find(".tab-content").hide();
+            $(this).parents(".tab").find(".tab-content:eq("+ $(this).index() +")").show();
+            $(this).parents(".tab").find(".reduce-word li:eq("+ $(this).index() +")").show().siblings().hide();
+            $(".message .degree").text(this.textContent);
+            if ($(this).parents().hasClass('view-whole-content')) {
+                System.operateState.saveReduceFullDegree(ReportID, this.textContent);
+                zhugeTrack(this, `全篇内容的降重程度-${this.textContent}`);
+            }
+        });
+
+        $(document).on('change', ".checked-list .item input[type=radio]", function() {
+            $(".reduce-repeat-column .tab-nav li:nth-child("+ this.id +")").click();
+            System.operateState.saveReduceMasterDegree(ReportID, this.id);
+            zhugeTrack(this, `句子汇总的降重程度-${this.value}`);
+        })
+
+        $(document).on("change", ".checked-list .item #diff", function() {
+            if (this.checked) {
+                $(".reduce-repeat-column .item-comparison").css("display", "grid");
+                $(".checked-desc-tip .diff").show();
+            } else {
+                $(".reduce-repeat-column .item-comparison").css("display", "none");
+                $(".checked-desc-tip .diff").hide();
+            }
+            System.operateState.saveReduceDiffShow(ReportID, this.checked);
+            zhugeTrack(this, `显示降重前后对比-${this.checked}`);
+        });
+
+        $(document).on("change", ".checked-list .item #concise", function () {
+            conciseChange(this.checked);
+            System.operateState.saveReduceConciseShow(ReportID, this.checked);
+            zhugeTrack(this, `显示相似度角标-${this.checked}`);
+        })
+
+        function hasReduceWord() {
+            if (typeof is_online_view != "undefined" && is_online_view) {
+                if (typeof consume_type != "undefined" && consume_type == 'reduce') {
+                    if (typeof hasWordRewriteLevelReport != "undefined" && hasWordRewriteLevelReport) {
+                        $(".reduce .reduce-word, .view-whole-content .reduce-word a[data-type]").show();
+                    } else {
+                        $(".reduce .reduce-word, .view-whole-content .reduce-word a[data-type]").hide();
+                    }
+                    if (typeof hasWordRewriteReport != "undefined" && hasWordRewriteReport) {
+                        $(".reduce-word[data-type='降重批注word']").show();
+                    } else {
+                        $(".reduce-word[data-type='降重批注word']").hide();
+                    }
+                } else {
+                    $(".reduce").css("display", "grid");
+                }
+
+            } else {
+                $(".before .reduce-word, .reduce .reduce-word, .view-whole-content .reduce-word a[data-type]").hide();
+            }
+        }
+
+        let freeExperienceHtml = `<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAA6tJREFUWEftl11oFFcUx/9nPiQP+VghUAtKUxpBwYqCD4X2ISVI+1Cx2Qmi4EOE4kecUUEEcSftLdlpS+mDOrMSaUvyIArB3Q34JCpYQonQgDZrwYLQiAoW8pCagLYzO6fMbq5djJlsmUUpdF/3zjm/8/U/9xJe8Y+W8m9eFOvCUG9qBJ+i+E+9XnHnRbYWAfQNi6bmVn2cCFsa4VzaYObJeSXYOtIjZmvtLgIwi85hYpwk4FxIuNsQCEYnAbsJME+nM7nlAD4jhigH/uYzO8StRgD0jzqbVA03mSC8nszn/wP8NzMQNSeA1DI9MXv7Zz93XYig9lziHugfFatUTb8PQFsGIPB17hjaZj9sKEBkzMqL1eWy3h4HoKr+jGuIB8+fSZyBpKPYNyxSLW3aBUD5yk2f+OGlN2FcAC9SwkVCVI1Av8RA8z/G+KqXto8lzU7dAM1tWhGgmil4iQD1RmkVB99CSH0A3mGidgI/BXCbQ7ro9WYu17UNzaLzr3dBZYO2rRgk8JFoVJl5noimmZEiwuqqY74RMnbmDPteQ5swct5SLc+HYL4BUo6Xpv76UYrR/guiQ1uhHSWi/cw8o2rcdWr7wK8Soq4eiCuBlf/CBbEJ5pOlUnAsctwlhLZhk96tEm6d2p75PfreHHM+QJnHCDQ999jfPLJHROVBIoD+UdGpqFqJCJOlqeB9GbVZyH5JoONg3HGNzHoZgJV3joLwDQO2l844iQGsfHYQRDZAXbUCIwGYcdczMmslQJSZtzfqvzFj3lsAS5QBK5+9EnW8a9gttWWq9EWr3q1omJQlqMnCMAh9c3/4K0f2iNlEAGbBuQlGk4ymnnGVUxaG5Q253k9/SQRgFbITzOjwDPv15zJQUc6QIHI9mWu1/1n5rAsi8wn7a74zxIOEAM63AD7x//TfHNolpqWjuO1n5p2fiLjTTdsrEzfhoaLTzYyrYPJc44S1HEB/IfueChpn8JCXtg8kBqjeE7ITINrCCj7yPq7KbbS8ot3BRFlZgoVLzQSA18qBv/HMDlG58icqQWRgQQvGo+sagey5x35OiozMiFkc7CJWhgG8AQ4PuMbA2SWV8FDBOciAF/cwURgzU1P+WSk8EYSq6dFIdjDzIxAug2kahBQY7y68sp4whZbXM/B97C6opK9Vu0JEcU+zRXe/ykJK6fvAvI9A6545YcyAeKwcBF/LtMcCPEtbzON0qbuf/HbvedGuKFgV6JiNRi1OH5Z8HdcjKo048zcfyoM/YGXJ0wAAAABJRU5ErkJggg==">
+                                    <span>每个用户仅支持免费体验2次</span>
+                                    <a href="${reducePayUrl}" target="_blank" class="btn btn-experience">购买完整版降重</a>`;
+
+        function queryReduceResult() {
+            $.ajax({
+                url: baseReduceUrl + '/api/reduce/query',
+                type: 'POST',
+                data: { report_id: ReportID },
+                success: ({ code, data, msg = '' }) => {
+                    if (code === 0) {
+                        if (!data.canUse) {
+                            $(".reduce-result-tips").html(freeExperienceHtml);
+                        }
+                        if (data.result && data.result.length > 0) {
+                            data.result.forEach((sentence) => {
+                                let reduceNumRow = $(".reduce-repeat-row[data-reduceNum="+ sentence.sentenceId +"]");
+                                sentence.reduceDetailResult.forEach((result, i) => {
+                                    addReduceResultContent(sentence.originalContent, reduceNumRow, result, i);
+                                });
+                            });
+                        }
+                        if (ReduceDiffShow === false) {
+                            $(".reduce-repeat-column .item-comparison").hide()
+                        }
+                    }
+                }
+            });
+        }
+
+        function querySentenceReduceResult(sentence_id, content) {
+            let reduceNumRow = $(".reduce-repeat-row[data-reduceNum="+ sentence_id +"]");
+            $.ajax({
+                url: baseReduceUrl + '/api/reduce/index',
+                type: 'POST',
+                data: { report_id: ReportID, sentence_id, content },
+                success: ({ code, data, msg = '' }) => {
+                    if (code === 0) {
+                        if (data.result) {
+                            data.result.reduceDetailResult.forEach((result, i) => {
+                                addReduceResultContent(content, reduceNumRow, result, i);
+                            });
+                            if (ReduceDiffShow === false) {
+                                $(".reduce-repeat-column .item-comparison").hide()
+                            }
+                        } else {
+                            $(".reduce-result-tips").html(freeExperienceHtml);
+                        }
+                    } else {
+                        reduceNumRow.find(".reduce-result-tips").html(`<div class="busy-network"><div>网络繁忙，请稍后再试</div><button class="btn btn-get-reduce-result">重试</button></div>`);
+                    }
+                },
+                error: () => {
+                    reduceNumRow.find(".reduce-result-tips").html(`<div class="busy-network"><div>网络繁忙，请稍后再试</div><button class="btn btn-get-reduce-result">重试</button></div>`);
+                }
+            });
+        }
+
+        function addReduceResultContent(content, row, result, i) {
+            let tabContent = row.find(".reduce-repeat-column.after .tab-content:eq("+ i +")");
+            let dropScore = Math.round(result.dropScore *  100);
+            let color = scoreColor(dropScore);
+            let diffHtml = `<div class="item-comparison"><div class="comparison-content">${updateDiffText(content, result.content)}</div></div>`;
+            tabContent.append(diffHtml);
+            $(`<div class="desc">降重后和原文相比改动了 <span class="green">${dropScore}%</span></div>`).prependTo(tabContent);
+            tabContent.find(".content").html(result.content);
+            tabContent.find(".content").attr("data-content", result.content);
+            row.find(".reduce-result-tips").hide();
+            row.find(".reduce-repeat-column.after .btn-copy").show();
+            row.find(".reduce-repeat-column.after .tab").show();
+        }
+
+        $(document).on("click", ".btn-copy", function() {
+            const pDom = $(this).parents().hasClass("view-whole-content") ? (consume_type == 'reduce' ? $(this).parents(".view-whole-content") : 'postMessage') : $(this).parents(".reduce-repeat-column");
+            if ( pDom == 'postMessage') return parent.postMessage({ url: reducePayUrl, reduceMsg: "此报告没有购买降重服务，无法复制降重后的全篇内容！</br>请购买智能降重服务。" }, "*");
+            let i = pDom.find(".tab-nav li.active").index();
+            let value = pDom.hasClass('before') ? pDom.find(".content").data('content') : pDom.hasClass('after') ? $(pDom.find(".tab-content")[i]).find(".content").data('content') : $(pDom.find(".tab-content")[i]).find(".content").text();
+            copyValue(value);
+        });
+
+
+        var zhugeTrack = (_this, _describe) => {
+            let zhugeClick = $(_this).data("zhuge");
+            if (typeof zhugeClick == 'undefined') {
+                $(_this).data("zhuge","isClicked");
+                if (typeof zhuge != 'undefined') {
+                    zhuge.track('在线报告点击', { '检测版本': check_type, '降重版本': consume_type, '按钮': _describe });
+                }
+            }
+        }
+
+        $(document).on("click", ".btn-get-reduce-result", function() {
+            let reduceNum = $(this).parents(".reduce-repeat-row").data().reducenum;
+            let content = $(this).parents(".reduce-repeat-row").find(".reduce-repeat-column.before .content").data('content');
+            $(this).parent(".reduce-result-tips").html(`<img src="./images/loading.gif" class="loading">`);
+            querySentenceReduceResult(reduceNum, content);
+        });
+
+        $(document).on('click', '.reduce .reduce-word, .before .col.reduce-word', function (e) {
+            e.preventDefault();
+            if (typeof consume_type != "undefined" && consume_type == 'reduce') {
+                window.open(this.href);
+            } else {
+                parent.postMessage({ url: reducePayUrl, reduceMsg: '此报告没有购买降重服务，不支持下载此项！</br>请购买智能降重服务。' }, "*");
+            }
+            zhugeTrack(this, `智能降重下载-${this.dataset.type}`);
+        });
+
+        $(document).on('click', '.reduce-report', function (e) {
+            e.preventDefault();
+            if (typeof consume_type != "undefined" && consume_type == 'reduce') {
+                window.open(this.href, this.href);
+            } else {
+                if (this.dataset.type == "降重前报告") {
+                    parent.postMessage("reload", "*");
+                } else {
+                    parent.postMessage({ url: reducePayUrl, reduceMsg: "此报告没有购买降重服务，无法查看降重后的查重报告！</br>请购买智能降重服务。" }, "*");
+                }
+            }
+            zhugeTrack(this, `报告类型-${this.dataset.type}`);
+        });
+
+        $(document).on('click', '.btn-get-similarity', function () {
+            parent.postMessage({ url: reducePayUrl, reduceMsg: "此报告没有购买降重服务，无法查看降重后的相似度！<br>请购买智能降重服务。" }, "*");
+        });
+
+        $(document).on('click', '.btn-upgrade-reduce', function () {
+            parent.postMessage({ url: reducePayUrl, reduceMsg: '' }, "*");
+        });
+
+        function conciseChange(prop) {
+            let descTip = $(".reduce-repeat-container .tab-content > .reduce.desc");
+            let subspan = $(".reduce-repeat-table .reduce-repeat-column .content > .subspan");
+            let subscore = subspan.find(".score");
+            let beforeContent = $(".reduce-repeat-column.before .content");
+            let afterContent = $(".reduce-repeat-column.after .content");
+            let checkTip = $(".checked-desc-tip .concise");
+            if (prop) {
+                $(".checked-list input[type=checkbox]#concise").prop("checked", true);
+                $(".reduce-repeat-table").addClass(isReduceResult ? 'showSub reduce' : 'showSub');
+                descTip.show();
+                subscore.show();
+                checkTip.show();
+            } else {
+                $(".checked-list input[type=checkbox]#concise").prop("checked", false);
+                $(".reduce-repeat-table").removeClass('showSub').removeClass('reduce');
+                descTip.hide();
+                subscore.hide();
+                checkTip.hide();
+            }
+        }
+
+    })(Report, jQuery);
+
+    function mergeSectionCount(data) {
+        let sectionNum = 1;
+        let html = '<p>';
+        $.each(data, function (index, {reduceFlag, sectionCount, content}) {
+            c = filterCharacter(content);
+            if (sectionCount == sectionNum) {
+                html += reduceFlag == '0' ? c : `<span class="green">${c}</span>`;
+            } else {
+                sectionNum = sectionCount;
+                html += reduceFlag == '0' ? `</p>\r\n<p>${c}` : `</p>\r\n<p><span class="green">${c}</span>`;
+            }
+        });
+        html += '</p>';
+        return html;
+    }
+
+    function updateDiffText(oldContent, newContent, isDel = 1) {
+        let diffArr = JsDiff.diffChars(oldContent, newContent);
+        let html = '';
+        if (!isDel) {
+            diffArr = diffArr.filter((item) => !item.removed)
+        }
+        diffArr.map(item => {
+            if (item.added) {
+                html += `<span class="add">${item.value.replace(/[\r\n]+/g, '<br/>')}</span>`
+            } else if (item.removed) {
+                html += `<span class="remove">${item.value.replace(/[\r\n]+/g, '<br/>')}</span>`
+            } else {
+                html += item.value.replace(/[\r\n]+/g, '<br/>')
+            }
+        });
+        return html;
+    }
+
+    function rewriteReportSwitchHref() {
+        let filename = filename_h = filename_m = filename_l = '';
+        if (typeof consume_type != "undefined" && consume_type == "reduce") {
+            if (typeof is_online_view != "undefined" && is_online_view) {
+                filename = '../';
+                filename_h = '../reduce/shendu.html';
+                filename_m = '../reduce/zhongdu.html';
+                filename_l = '../reduce/qingdu.html';
+            } else {
+                filename = `../${index_entry}.html`;
+                filename_h = '../降重/1_深度降重后的查重报告.html';
+                filename_m = '../降重/2_中度降重后的查重报告.html';
+                filename_l = '../降重/3_轻度降重后的查重报告.html';
+            }
+        }
+        $(".reduce-report[data-type='降重前报告']").attr("href", filename);
+        $(".reduce-report[data-type='深度降重后报告']").attr("href", filename_h);
+        $(".reduce-report[data-type='中度降重后报告']").attr("href", filename_m);
+        $(".reduce-report[data-type='轻度降重后报告']").attr("href", filename_l);
+    }
+
+    function scoreColor(score) {
+        if (score < 40) {
+            return "green"
+        } else if (score >= 60) {
+            return "red"
+        } else {
+            return "orange"
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperPass 权威论文抄袭检测系统</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/iframe.css">
+</head>
+<body>
+<div id="m-content">
+    <div id="m-primary">
+        <iframe src="" name="left" scrolling="no" frameborder="0" id="iframeId" class="iframeClass"></iframe>
+    </div>
+    <div id="m-secondary">
+        <iframe src="" name="right" scrolling="no" frameborder="0" id="iframeRight"></iframe>
+    </div>
+</div>
+
+<span style="display: none;">This__is__the__place__to__load__the__google__statistics__code.__The__offline__version__is__hidden,__but__the__online__version__will__have__it.</span>
+</body>
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script type="text/javascript" src="js/lib.js"></script>
+<script src="js/util.js"></script>
+<script>
+    var rewriteDegree = getParamValue(location.search, "degree");
+    var reportType = getParamValue(location.search, "type");
+    let secondarySrc = rewriteDegree ? `sentence_detail.html?degree=${rewriteDegree}` : ['ai', "AI", "reduce_ai"].includes(reportType) ? `sentence_detail_ai.html?type=${reportType}` : `sentence_detail.html`;
+    let script = rewriteDegree ? `<script src="js/detaildata_${rewriteDegree}.js"><\/script>` : reportType == 'reduce_ai' ? `<script src="js/detaildata_reduce_ai.js"><\/script>` : `<script src="js/detaildata.js"><\/script>`;
+    document.write(script);
+    $('#m-secondary iframe').attr("src", secondarySrc);
+</script>
+<script type="text/javascript">
+    (function (System, $) {
+        'use strict';
+        if (rewriteDegree) {
+            ReportID = ReportID + `_${rewriteDegree}`;
+        }
+        if (reportType == 'AI') {
+            ReportID = ReportID + `_ai`;
+        }
+        if (reportType == 'reduce_ai') {
+            ReportID = ReportID + `_reduce_ai`;
+        }
+        System.operateState.saveId(ReportID);
+
+        let initPage = System.operateState.getInitPage(ReportID);
+        let FoldState = System.operateState.getFoldState(ReportID);
+        let isHasWord = false;
+        if (['ai', "AI", "reduce_ai"].includes(reportType)) {
+            isHasWord = ai_is_has_word;
+            FoldState = System.operateState.getFoldStateAI(ReportID);
+            initPage = System.operateState.getInitPageAI(ReportID);
+        } else {
+            isHasWord = is_has_word;
+        }
+        if (FoldState == "none") {
+            $("#m-primary").css("width","100%");
+            $("#m-secondary").css("width","0");
+        } else {
+            $("#m-primary").css("width","70%");
+            $("#m-secondary").css("width","30%");
+        }
+        if (isHasWord && initPage == "" || initPage == "switch_word") {
+            let primarySrc = rewriteDegree ? `standard_report_${rewriteDegree}.html` : reportType == 'ai' ? `standard_report_ai.html` : reportType == 'AI' ? `standard_report_ai.html?type=AI` : reportType == 'reduce_ai' ? `standard_report_reduce_ai.html` : `standard_report.html`;
+            $('#m-primary iframe').attr('src', primarySrc);
+        } else {
+            let primarySrc = rewriteDegree ? `text_report.html?degree=${rewriteDegree}` : reportType == 'ai' ? `text_report_ai.html` : ["AI", "reduce_ai"].includes(reportType) ? `text_report_ai.html?type=${reportType}` : `text_report.html`;
+            $('#m-primary iframe').attr('src', primarySrc);
+        }
+    })(Report, jQuery);
+
+    $(function () {
+        var iframe = document.getElementById('iframeId');
+        var iframeRight = document.getElementById('iframeRight');
+        window.addEventListener("message", function( event ) {
+            // 接受父页面和子页面的值
+            iframe.contentWindow.postMessage(event.data,'*');
+            iframeRight.contentWindow.postMessage(event.data,'*');
+
+            if( event.data.FoldState == "block" ){
+                $("#m-primary").css("width","70%");
+                $("#m-secondary").css("width","30%");
+            }
+            if( event.data.FoldState == "none" ){
+                $("#m-primary").css("width","100%");
+                $("#m-secondary").css("width","0");
+            }
+        }, false);
+    });
+</script>
+</html>
