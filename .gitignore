@@ -5,3 +5,4 @@ __pycache__
 .env
 .env
 video_system.db
+dist
